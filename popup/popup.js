@@ -15,6 +15,7 @@ let pinMode = false;
 
 pinToggle.addEventListener('click', () => {
   pinMode = !pinMode;
+  console.log('[VIPER] 固定播放模式:', pinMode);
   pinToggle.classList.toggle('active', pinMode);
   chrome.storage.session.set({ pinMode });
 });
@@ -164,18 +165,31 @@ function bindEpisodeEvents(container) {
       const episode = btn.textContent.trim();
 
       if (pinMode) {
+        console.log('[VIPER] pinMode=true, 开始固定播放流程');
         try {
-          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-          if (tab) {
-            chrome.tabs.sendMessage(tab.id, {
-              type: 'pinPlay',
-              url,
-              name: showName,
-              episode
-            });
+          const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+          console.log('[VIPER] 查询到的标签页:', tab);
+          if (!tab || !tab.id || tab.url?.startsWith('chrome://') || tab.url?.startsWith('edge://') || tab.url?.startsWith('chrome-extension://')) {
+            throw new Error('当前页面不支持固定播放');
+          }
+
+          // 确保 content script 已注入
+          console.log('[VIPER] 注入 content script...');
+          await ensureContentScript(tab.id);
+          console.log('[VIPER] content script 就绪，发送 pinPlay');
+
+          const response = await chrome.tabs.sendMessage(tab.id, {
+            type: 'pinPlay',
+            url,
+            name: showName,
+            episode
+          });
+          console.log('[VIPER] pinPlay 响应:', response);
+          if (!response || !response.success) {
+            throw new Error('内容脚本未响应');
           }
         } catch (err) {
-          console.error('发送固定播放消息失败:', err);
+          console.error('[VIPER] 固定播放失败，回退到新标签页:', err);
           if (url) {
             chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
           }
@@ -187,6 +201,7 @@ function bindEpisodeEvents(container) {
           }
         }
       } else {
+        console.log('[VIPER] pinMode=false, 新标签页播放');
         if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
       }
     });
@@ -325,6 +340,21 @@ async function loadFavorites() {
       await chrome.runtime.sendMessage({ type: 'removeFavorite', name: btn.dataset.name });
       loadFavorites();
     });
+  });
+}
+
+// 确保 content script 已注入到目标标签页
+async function ensureContentScript(tabId) {
+  try {
+    // 先尝试 ping 一下，看 content script 是否已存在
+    const response = await chrome.tabs.sendMessage(tabId, { type: 'ping' });
+    if (response && response.pong) return;
+  } catch {
+    // content script 不存在，需要注入
+  }
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ['content/floating-panel.js', 'content/content-script.js']
   });
 }
 

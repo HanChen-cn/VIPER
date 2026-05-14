@@ -1,9 +1,18 @@
 let currentPanel = null;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'ping') {
+    sendResponse({ pong: true });
+    return false;
+  }
   if (message.type === 'pinPlay') {
-    handlePinPlay(message);
-    sendResponse({ success: true });
+    try {
+      handlePinPlay(message);
+      sendResponse({ success: true });
+    } catch (err) {
+      console.error('[VIPER] pinPlay error:', err);
+      sendResponse({ success: false, error: err.message });
+    }
   }
   return false;
 });
