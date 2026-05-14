@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="player.css">
+  <title>播放中</title>
+</head>
+<body>
+  <div id="playerContainer">
+    <iframe id="playerFrame" src="" frameborder="0" allowfullscreen></iframe>
+  </div>
+
+  <div id="sourcePanel" class="source-panel">
+    <button id="toggleBtn" class="toggle-btn" title="换源">换源 ▼</button>
+    <div id="sourceDropdown" class="source-dropdown hidden">
+      <div class="dropdown-header">
+        <span id="showInfo" class="show-info"></span>
+        <button id="closeDropdown" class="close-dropdown">✕</button>
+      </div>
+      <div id="sourceList" class="source-list"></div>
+    </div>
+  </div>
+
+  <div id="topBar" class="top-bar">
+    <span id="topTitle" class="top-title"></span>
+  </div>
+
+  <script src="player.js"></script>
+</body>
+</html>

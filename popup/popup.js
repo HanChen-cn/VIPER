@@ -163,7 +163,14 @@ function bindEpisodeEvents(container) {
       const url = btn.dataset.url;
       const showName = btn.closest('.episodes')?.dataset.showName || '';
       const episode = btn.textContent.trim();
-      if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
+      const altUrls = [];
+      const episodeGroup = btn.closest('.episode-group');
+      if (episodeGroup) {
+        episodeGroup.querySelectorAll('.alt-link').forEach(link => {
+          altUrls.push({ name: link.textContent.trim(), url: link.dataset.url });
+        });
+      }
+      if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode, altUrls });
     });
   });
 
@@ -171,7 +178,6 @@ function bindEpisodeEvents(container) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const dropdown = btn.nextElementSibling;
-      // 关闭其他所有下拉
       document.querySelectorAll('.alt-dropdown.show').forEach(d => {
         if (d !== dropdown) d.classList.remove('show');
       });
@@ -187,7 +193,16 @@ function bindEpisodeEvents(container) {
       const epBtn = episodeGroup?.querySelector('.episode-btn');
       const showName = link.closest('.episodes')?.dataset.showName || '';
       const episode = epBtn?.textContent.trim() || '';
-      if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
+      const altUrls = [];
+      if (epBtn) {
+        altUrls.push({ name: '默认源', url: epBtn.dataset.url });
+      }
+      episodeGroup.querySelectorAll('.alt-link').forEach(alt => {
+        if (alt !== link) {
+          altUrls.push({ name: alt.textContent.trim(), url: alt.dataset.url });
+        }
+      });
+      if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode, altUrls });
       link.closest('.alt-dropdown').classList.remove('show');
     });
   });

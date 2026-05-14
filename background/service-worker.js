@@ -26,7 +26,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'play') {
-    chrome.tabs.create({ url: message.url, active: true });
+    const playerData = {
+      url: message.url,
+      name: message.name || '',
+      episode: message.episode || '',
+      altUrls: message.altUrls || []
+    };
+    chrome.storage.session.set({ playerData }, () => {
+      const playerUrl = chrome.runtime.getURL('player/player.html');
+      chrome.tabs.create({ url: playerUrl, active: true });
+    });
     if (message.name && message.episode) {
       addPlayHistory({ name: message.name, episode: message.episode, url: message.url });
     }
