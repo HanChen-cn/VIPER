@@ -263,7 +263,7 @@ class FloatingPanel {
         border: 1px solid #667eea;
         border-radius: 10px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-        overflow: hidden;
+        overflow: visible;
         display: flex;
         flex-direction: column;
       }
@@ -308,7 +308,7 @@ class FloatingPanel {
       }
       .viper-body {
         flex: 1;
-        position: relative;
+        min-height: 0;
       }
       .viper-body iframe {
         width: 100%;
@@ -316,10 +316,8 @@ class FloatingPanel {
         border: none;
       }
       .viper-source-bar {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        position: relative;
+        flex-shrink: 0;
         background: rgba(26,26,46,0.9);
         padding: 4px 8px;
         display: flex;
@@ -345,14 +343,14 @@ class FloatingPanel {
       }
       .viper-source-list {
         position: absolute;
-        bottom: 100%;
+        top: 100%;
         left: 8px;
         background: #1a1a2e;
         border: 1px solid #667eea;
         border-radius: 6px;
         padding: 6px;
-        margin-bottom: 4px;
-        max-height: 200px;
+        margin-top: 4px;
+        max-height: 150px;
         overflow-y: auto;
         min-width: 160px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -390,7 +388,7 @@ class FloatingPanel {
         width: 16px;
         height: 16px;
         cursor: nwse-resize;
-        z-index: 1;
+        z-index: 2;
       }
       .viper-resize-handle::after {
         content: '';

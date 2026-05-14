@@ -176,7 +176,15 @@ function bindEpisodeEvents(container) {
           }
         } catch (err) {
           console.error('发送固定播放消息失败:', err);
-          if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
+          if (url) {
+            chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
+          }
+          const errorEl = document.getElementById('error');
+          if (errorEl) {
+            errorEl.textContent = '无法在当前页面使用固定播放，已切换到新标签页播放';
+            errorEl.classList.remove('hidden');
+            setTimeout(() => errorEl.classList.add('hidden'), 3000);
+          }
         }
       } else {
         if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
