@@ -10,6 +10,22 @@ const favoritesContentEl = document.getElementById('favoritesContent');
 const RECENT_EPISODES_COUNT = 10;
 let currentResults = [];
 
+const pinToggle = document.getElementById('pinToggle');
+let pinMode = false;
+
+pinToggle.addEventListener('click', () => {
+  pinMode = !pinMode;
+  pinToggle.classList.toggle('active', pinMode);
+  chrome.storage.session.set({ pinMode });
+});
+
+chrome.storage.session.get('pinMode', (result) => {
+  if (result.pinMode) {
+    pinMode = true;
+    pinToggle.classList.add('active');
+  }
+});
+
 searchBtn.addEventListener('click', handleSearch);
 searchInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') handleSearch();
@@ -65,6 +81,7 @@ async function handleSearch() {
 
     currentResults = response.data;
     renderResults(response.data);
+    pinToggle.classList.remove('hidden');
   } catch (err) {
     showError('搜索出错: ' + err.message);
   } finally {
@@ -140,12 +157,30 @@ function buildEpisodeHtml(ep, idx) {
 
 function bindEpisodeEvents(container) {
   container.querySelectorAll('.episode-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.preventDefault();
       const url = btn.dataset.url;
       const showName = btn.closest('.episodes')?.dataset.showName || '';
       const episode = btn.textContent.trim();
-      if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
+
+      if (pinMode) {
+        try {
+          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (tab) {
+            chrome.tabs.sendMessage(tab.id, {
+              type: 'pinPlay',
+              url,
+              name: showName,
+              episode
+            });
+          }
+        } catch (err) {
+          console.error('发送固定播放消息失败:', err);
+          if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
+        }
+      } else {
+        if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
+      }
     });
   });
 }
