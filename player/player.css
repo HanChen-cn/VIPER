@@ -88,6 +88,24 @@ body:hover .top-bar {
   border-radius: 10px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.6);
   overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.source-dropdown::-webkit-scrollbar {
+  width: 8px;
+}
+
+.source-dropdown::-webkit-scrollbar-track {
+  background: #16213e;
+}
+
+.source-dropdown::-webkit-scrollbar-thumb {
+  background: #3a3a5a;
+  border-radius: 4px;
+}
+
+.source-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #667eea;
 }
 
 .source-dropdown.hidden {

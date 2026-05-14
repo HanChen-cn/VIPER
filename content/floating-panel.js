@@ -354,6 +354,20 @@ class FloatingPanel {
         overflow-y: auto;
         min-width: 160px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        scrollbar-gutter: stable;
+      }
+      .viper-source-list::-webkit-scrollbar {
+        width: 6px;
+      }
+      .viper-source-list::-webkit-scrollbar-track {
+        background: #16213e;
+      }
+      .viper-source-list::-webkit-scrollbar-thumb {
+        background: #3a3a5a;
+        border-radius: 3px;
+      }
+      .viper-source-list::-webkit-scrollbar-thumb:hover {
+        background: #667eea;
       }
       .viper-source-list.hidden { display: none; }
       .viper-source-item {
