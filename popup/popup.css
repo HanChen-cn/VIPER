@@ -4,6 +4,10 @@
   box-sizing: border-box;
 }
 
+:root {
+  scrollbar-gutter: stable;
+}
+
 body {
   width: 420px;
   min-height: 300px;
