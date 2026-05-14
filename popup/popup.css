@@ -4,10 +4,8 @@
   box-sizing: border-box;
 }
 
-html {
-  border: none;
-  outline: none;
-  overflow: hidden;
+:root {
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -18,9 +16,6 @@ body {
   background: #1a1a2e;
   color: #eee;
   overflow-y: overlay;
-  overflow-x: hidden;
-  border: none;
-  outline: none;
 }
 
 body::-webkit-scrollbar {
