@@ -11,6 +11,7 @@ Chrome/Edge 浏览器扩展 — 输入电视剧/动漫名称，自动搜索全�
 - **播放历史** — 记录看过的剧集，一键继续观看
 - **收藏夹** — 收藏常看的剧，随时回来搜索
 - **新 tab 播放** — 点击剧集直接在新标签页播放
+- **浮动播放器** — 可在当前页面固定播放，拖拽/缩放/最小化，支持换源
 
 ## 安装
 
@@ -34,10 +35,15 @@ Chrome/Edge 浏览器扩展 — 输入电视剧/动漫名称，自动搜索全�
 ```
 popup (搜索/历史/收藏) ←→ service-worker (后台) ←→ CMS API + 解析接口
                                     ↕
-                          chrome.storage.local (持久化)
+                          chrome.storage.local (历史, 收藏)
+                          chrome.storage.session (播放数据, 固定模式)
+                                    ↕
+content script (浮动播放器)  ←  注入到任意页面 (Shadow DOM 隔离)
+player (新标签页播放器)      ←  从 session storage 读取播放数据
 ```
 
 - Chrome Extension Manifest V3
 - 原生 JavaScript / HTML / CSS，零依赖
 - CMS 采集站标准 API（5 个资源站并发搜索）
 - 35 个内置解析接口，预热检测 + 智能排序
+- 浮动播放器：可拖拽、可缩放、可最小化，支持一键换源
