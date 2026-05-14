@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+  <title>VIP 视频搜索</title>
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1 class="title">VIP 视频搜索</h1>
+      <span id="warmupStatus" class="warmup-status"></span>
+    </header>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="输入电视剧/动漫名称..." autocomplete="off">
+      <button id="searchBtn" class="btn-search">搜索</button>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="search">搜索</button>
+      <button class="tab" data-tab="history">历史</button>
+      <button class="tab" data-tab="favorites">收藏</button>
+    </div>
+    <div id="tabSearch" class="tab-content active">
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <span>正在搜索中...</span>
+      </div>
+      <div id="results" class="results"></div>
+      <div id="error" class="error hidden"></div>
+    </div>
+    <div id="tabHistory" class="tab-content hidden">
+      <div id="historyContent"></div>
+    </div>
+    <div id="tabFavorites" class="tab-content hidden">
+      <div id="favoritesContent"></div>
+    </div>
+  </div>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
