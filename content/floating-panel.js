@@ -28,7 +28,7 @@ class FloatingPanel {
           </div>
         </div>
         <div class="viper-body">
-          <iframe src="${url}" allowfullscreen></iframe>
+          <iframe src="${this.escapeHtml(url)}" allowfullscreen></iframe>
         </div>
         <div class="viper-source-bar">
           <button class="viper-source-toggle">换源 ▼</button>
@@ -82,6 +82,14 @@ class FloatingPanel {
   }
 
   startLoadTimer() {
+    try {
+      if (this.iframe.contentDocument && this.iframe.contentDocument.readyState === 'complete') {
+        return;
+      }
+    } catch (e) {
+      // Cross-origin iframe, can't check — proceed with timer
+    }
+
     this.loadTimer = setTimeout(() => {
       this.showLoadError();
     }, 10000);
@@ -92,6 +100,7 @@ class FloatingPanel {
   }
 
   showLoadError() {
+    this.shadow.querySelector('.viper-error')?.remove();
     const body = this.shadow.querySelector('.viper-body');
     const errorEl = document.createElement('div');
     errorEl.className = 'viper-error';
@@ -163,7 +172,7 @@ class FloatingPanel {
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
       this.x = Math.max(0, Math.min(origX + dx, window.innerWidth - this.width));
-      this.y = Math.max(0, Math.min(origY + dy, window.innerHeight - 40));
+      this.y = Math.max(-(this.height - 30), Math.min(origY + dy, window.innerHeight - 40));
       this.panel.style.left = this.x + 'px';
       this.panel.style.top = this.y + 'px';
     };
@@ -212,6 +221,7 @@ class FloatingPanel {
       const maxH = window.innerHeight * 0.8;
       if (newW > maxW) { newW = maxW; newH = newW * 9 / 16; }
       if (newH > maxH) { newH = maxH; newW = newH * 16 / 9; }
+      if (newH < 180) { newH = 180; newW = newH * 16 / 9; }
       this.width = Math.round(newW);
       this.height = Math.round(newH);
       this.panel.style.width = this.width + 'px';
