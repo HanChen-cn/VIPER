@@ -177,3 +177,36 @@ body:hover .top-bar {
   background: rgba(76, 175, 80, 0.2);
   color: #4caf50;
 }
+
+.source-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  color: #888;
+  font-size: 12px;
+}
+
+.source-loading.hidden {
+  display: none;
+}
+
+.loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #333;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.source-empty {
+  padding: 10px 12px;
+  color: #666;
+  font-size: 12px;
+  text-align: center;
+}

@@ -135,25 +135,7 @@ function renderResults(results) {
 }
 
 function buildEpisodeHtml(ep, idx) {
-  const hasAlt = ep.altUrls && ep.altUrls.length > 0;
-  if (!hasAlt) {
-    return `<a class="episode-btn" href="#" data-url="${escapeAttr(ep.playUrl)}" title="${escapeAttr(ep.source)}">${escapeHtml(ep.name)}</a>`;
-  }
-
-  const altLinksHtml = ep.altUrls.map(alt =>
-    `<a class="alt-link" href="#" data-url="${escapeAttr(alt.url)}">${escapeHtml(alt.name)}</a>`
-  ).join('');
-
-  return `
-    <span class="episode-group">
-      <a class="episode-btn has-alt" href="#" data-url="${escapeAttr(ep.playUrl)}" title="点击播放 | 来源: ${escapeAttr(ep.source)}">${escapeHtml(ep.name)}</a>
-      <button class="alt-source-btn" title="换源（看不了点这里）">▼</button>
-      <div class="alt-dropdown">
-        <div class="alt-dropdown-title">换源播放</div>
-        ${altLinksHtml}
-      </div>
-    </span>
-  `;
+  return `<a class="episode-btn" href="#" data-url="${escapeAttr(ep.playUrl)}" title="${escapeAttr(ep.source)}">${escapeHtml(ep.name)}</a>`;
 }
 
 function bindEpisodeEvents(container) {
@@ -166,30 +148,6 @@ function bindEpisodeEvents(container) {
       if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
     });
   });
-
-  container.querySelectorAll('.alt-source-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const dropdown = btn.nextElementSibling;
-      document.querySelectorAll('.alt-dropdown.show').forEach(d => {
-        if (d !== dropdown) d.classList.remove('show');
-      });
-      dropdown.classList.toggle('show');
-    });
-  });
-
-  container.querySelectorAll('.alt-link').forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const url = link.dataset.url;
-      const episodeGroup = link.closest('.episode-group');
-      const epBtn = episodeGroup?.querySelector('.episode-btn');
-      const showName = link.closest('.episodes')?.dataset.showName || '';
-      const episode = epBtn?.textContent.trim() || '';
-      if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
-      link.closest('.alt-dropdown').classList.remove('show');
-    });
-  });
 }
 
 function renderAllEpisodes(containerEl, episodes) {
@@ -197,11 +155,6 @@ function renderAllEpisodes(containerEl, episodes) {
   episodesEl.innerHTML = episodes.map((ep, idx) => buildEpisodeHtml(ep, idx)).join('');
   bindEpisodeEvents(episodesEl);
 }
-
-// 点击其他区域关闭所有下拉
-document.addEventListener('click', () => {
-  document.querySelectorAll('.alt-dropdown.show').forEach(d => d.classList.remove('show'));
-});
 
 function showLoading() { loadingEl.classList.remove('hidden'); }
 function hideLoading() { loadingEl.classList.add('hidden'); }

@@ -21,7 +21,7 @@ chrome.storage.session.get('playerData', (result) => {
   showInfo.textContent = `${name} · ${episode}`;
   document.title = `${name} - ${episode}`;
 
-  buildSourceList(url, []);
+  buildSourceList(url);
 
   playerFrame.src = url;
 
@@ -33,30 +33,38 @@ chrome.storage.session.get('playerData', (result) => {
 function loadAltSources() {
   if (!currentData || !currentData.name) return;
 
+  const loadingEl = sourceList.querySelector('.source-loading');
+  if (loadingEl) loadingEl.classList.remove('hidden');
+
   chrome.runtime.sendMessage({
     type: 'getAltSources',
     showName: currentData.name,
     episode: currentData.episode,
     currentUrl: currentData.url
   }, (res) => {
+    if (loadingEl) loadingEl.remove();
+
     if (res && res.success && res.data.length > 0) {
       appendAltSources(currentData.url, res.data);
+    } else {
+      const emptyEl = document.createElement('div');
+      emptyEl.className = 'source-empty';
+      emptyEl.textContent = '暂无其他源';
+      sourceList.appendChild(emptyEl);
     }
   });
 }
 
-function buildSourceList(currentUrl, altUrls) {
+function buildSourceList(currentUrl) {
   sourceList.innerHTML = '';
 
   const mainItem = createSourceItem(currentUrl, '当前源', true);
   sourceList.appendChild(mainItem);
 
-  if (altUrls && altUrls.length > 0) {
-    for (const alt of altUrls) {
-      const item = createSourceItem(alt.url, alt.name, false);
-      sourceList.appendChild(item);
-    }
-  }
+  const loadingEl = document.createElement('div');
+  loadingEl.className = 'source-loading';
+  loadingEl.innerHTML = '<span class="loading-spinner"></span> 搜索其他源中...';
+  sourceList.appendChild(loadingEl);
 }
 
 function appendAltSources(currentUrl, altSources) {
