@@ -163,14 +163,7 @@ function bindEpisodeEvents(container) {
       const url = btn.dataset.url;
       const showName = btn.closest('.episodes')?.dataset.showName || '';
       const episode = btn.textContent.trim();
-      const altUrls = [];
-      const episodeGroup = btn.closest('.episode-group');
-      if (episodeGroup) {
-        episodeGroup.querySelectorAll('.alt-link').forEach(link => {
-          altUrls.push({ name: link.textContent.trim(), url: link.dataset.url });
-        });
-      }
-      if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode, altUrls });
+      if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
     });
   });
 
@@ -193,16 +186,7 @@ function bindEpisodeEvents(container) {
       const epBtn = episodeGroup?.querySelector('.episode-btn');
       const showName = link.closest('.episodes')?.dataset.showName || '';
       const episode = epBtn?.textContent.trim() || '';
-      const altUrls = [];
-      if (epBtn) {
-        altUrls.push({ name: '默认源', url: epBtn.dataset.url });
-      }
-      episodeGroup.querySelectorAll('.alt-link').forEach(alt => {
-        if (alt !== link) {
-          altUrls.push({ name: alt.textContent.trim(), url: alt.dataset.url });
-        }
-      });
-      if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode, altUrls });
+      if (url) chrome.runtime.sendMessage({ type: 'play', url, name: showName, episode });
       link.closest('.alt-dropdown').classList.remove('show');
     });
   });

@@ -15,16 +15,35 @@ chrome.storage.session.get('playerData', (result) => {
   }
 
   currentData = result.playerData;
-  const { url, name, episode, altUrls } = currentData;
+  const { url, name, episode } = currentData;
 
   topTitle.textContent = `${name} - ${episode}`;
   showInfo.textContent = `${name} · ${episode}`;
   document.title = `${name} - ${episode}`;
 
+  buildSourceList(url, []);
+
   playerFrame.src = url;
 
-  buildSourceList(url, altUrls);
+  playerFrame.addEventListener('load', () => {
+    loadAltSources();
+  }, { once: true });
 });
+
+function loadAltSources() {
+  if (!currentData || !currentData.name) return;
+
+  chrome.runtime.sendMessage({
+    type: 'getAltSources',
+    showName: currentData.name,
+    episode: currentData.episode,
+    currentUrl: currentData.url
+  }, (res) => {
+    if (res && res.success && res.data.length > 0) {
+      appendAltSources(currentData.url, res.data);
+    }
+  });
+}
 
 function buildSourceList(currentUrl, altUrls) {
   sourceList.innerHTML = '';
@@ -37,6 +56,13 @@ function buildSourceList(currentUrl, altUrls) {
       const item = createSourceItem(alt.url, alt.name, false);
       sourceList.appendChild(item);
     }
+  }
+}
+
+function appendAltSources(currentUrl, altSources) {
+  for (const alt of altSources) {
+    const item = createSourceItem(alt.url, alt.name, false);
+    sourceList.appendChild(item);
   }
 }
 
@@ -58,6 +84,9 @@ function createSourceItem(url, name, isCurrent) {
 
   div.addEventListener('click', () => {
     playerFrame.src = url;
+
+    currentData.url = url;
+    chrome.storage.session.set({ playerData: currentData });
 
     sourceList.querySelectorAll('.source-item').forEach(item => {
       item.classList.remove('active');

@@ -1,4 +1,4 @@
-import { search, validateEpisodes, setWarmupResult } from '../lib/searcher.js';
+import { search, validateEpisodes, setWarmupResult, getAltSources } from '../lib/searcher.js';
 import { warmupParseApis } from '../lib/api-sources.js';
 import {
   getSearchHistory, addSearchHistory, clearSearchHistory,
@@ -29,8 +29,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const playerData = {
       url: message.url,
       name: message.name || '',
-      episode: message.episode || '',
-      altUrls: message.altUrls || []
+      episode: message.episode || ''
     };
     chrome.storage.session.set({ playerData }, () => {
       const playerUrl = chrome.runtime.getURL('player/player.html');
@@ -65,6 +64,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   if (message.type === 'removeFavorite') {
     removeFavorite(message.name).then(() => sendResponse({ success: true }));
+    return true;
+  }
+  if (message.type === 'getAltSources') {
+    getAltSources(message.showName, message.episode, message.currentUrl)
+      .then(altSources => sendResponse({ success: true, data: altSources }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
     return true;
   }
 });
