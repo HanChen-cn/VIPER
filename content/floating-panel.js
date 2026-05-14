@@ -351,10 +351,9 @@ class FloatingPanel {
         padding: 6px;
         margin-top: 4px;
         max-height: 150px;
-        overflow-y: auto;
+        overflow-y: overlay;
         min-width: 160px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        scrollbar-gutter: stable;
       }
       .viper-source-list::-webkit-scrollbar {
         width: 6px;
