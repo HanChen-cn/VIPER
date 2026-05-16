@@ -8,6 +8,7 @@ const topTitle = document.getElementById('topTitle');
 const nextEpisodeBtn = document.getElementById('nextEpisodeBtn');
 
 let currentData = null;
+let nextEpisodeLoadHandler = null;
 
 chrome.storage.session.get('playerData', (result) => {
   if (!result.playerData) {
@@ -60,6 +61,7 @@ function loadAltSources() {
 function loadNextEpisode() {
   if (!currentData || !currentData.name) return;
 
+  // 闲时请求：延迟 500ms，不阻塞播放
   setTimeout(() => {
     chrome.runtime.sendMessage({
       type: 'getEpisodeList',
@@ -167,10 +169,14 @@ nextEpisodeBtn.addEventListener('click', () => {
   document.title = `${currentData.name} - ${currentData.episode}`;
 
   nextEpisodeBtn.classList.add('hidden');
-  playerFrame.src = currentData.url;
 
-  playerFrame.addEventListener('load', () => {
+  if (nextEpisodeLoadHandler) {
+    playerFrame.removeEventListener('load', nextEpisodeLoadHandler);
+  }
+  nextEpisodeLoadHandler = () => {
     loadAltSources();
     loadNextEpisode();
-  }, { once: true });
+  };
+  playerFrame.src = currentData.url;
+  playerFrame.addEventListener('load', nextEpisodeLoadHandler, { once: true });
 });
