@@ -227,3 +227,28 @@ body:hover .top-bar {
   font-size: 12px;
   text-align: center;
 }
+
+.next-episode-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  transition: all 0.2s;
+  opacity: 0.85;
+  margin-right: 8px;
+}
+
+.next-episode-btn:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.next-episode-btn.hidden {
+  display: none;
+}
