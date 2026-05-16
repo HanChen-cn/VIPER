@@ -1,4 +1,4 @@
-import { search, validateEpisodes, setWarmupResult, getAltSources } from '../lib/searcher.js';
+import { search, validateEpisodes, setWarmupResult, getAltSources, getEpisodeList } from '../lib/searcher.js';
 import { warmupParseApis } from '../lib/api-sources.js';
 import {
   getSearchHistory, addSearchHistory, clearSearchHistory,
@@ -69,6 +69,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'getAltSources') {
     getAltSources(message.showName, message.episode, message.currentUrl)
       .then(altSources => sendResponse({ success: true, data: altSources }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+  if (message.type === 'getEpisodeList') {
+    getEpisodeList(message.showName)
+      .then(episodes => sendResponse({ success: true, data: episodes }))
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true;
   }
