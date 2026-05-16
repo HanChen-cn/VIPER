@@ -5,6 +5,7 @@ const closeDropdown = document.getElementById('closeDropdown');
 const showInfo = document.getElementById('showInfo');
 const sourceList = document.getElementById('sourceList');
 const topTitle = document.getElementById('topTitle');
+const nextEpisodeBtn = document.getElementById('nextEpisodeBtn');
 
 let currentData = null;
 
@@ -27,6 +28,7 @@ chrome.storage.session.get('playerData', (result) => {
 
   playerFrame.addEventListener('load', () => {
     loadAltSources();
+    loadNextEpisode();
   }, { once: true });
 });
 
@@ -53,6 +55,29 @@ function loadAltSources() {
       sourceList.appendChild(emptyEl);
     }
   });
+}
+
+function loadNextEpisode() {
+  if (!currentData || !currentData.name) return;
+
+  setTimeout(() => {
+    chrome.runtime.sendMessage({
+      type: 'getEpisodeList',
+      showName: currentData.name
+    }, (res) => {
+      if (!res || !res.success || !res.data || res.data.length === 0) return;
+
+      const episodes = res.data;
+      const currentIndex = episodes.findIndex(ep => ep.name === currentData.episode);
+      if (currentIndex < 0 || currentIndex >= episodes.length - 1) return;
+
+      const nextEp = episodes[currentIndex + 1];
+      currentData.nextPlayUrl = nextEp.playUrl;
+      currentData.nextEpisode = nextEp.name;
+
+      nextEpisodeBtn.classList.remove('hidden');
+    });
+  }, 500);
 }
 
 function buildSourceList(currentUrl) {
@@ -125,4 +150,27 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('.source-panel')) {
     sourceDropdown.classList.add('hidden');
   }
+});
+
+nextEpisodeBtn.addEventListener('click', () => {
+  if (!currentData || !currentData.nextPlayUrl) return;
+
+  currentData.url = currentData.nextPlayUrl;
+  currentData.episode = currentData.nextEpisode;
+  delete currentData.nextPlayUrl;
+  delete currentData.nextEpisode;
+
+  chrome.storage.session.set({ playerData: currentData });
+
+  topTitle.textContent = `${currentData.name} - ${currentData.episode}`;
+  showInfo.textContent = `${currentData.name} · ${currentData.episode}`;
+  document.title = `${currentData.name} - ${currentData.episode}`;
+
+  nextEpisodeBtn.classList.add('hidden');
+  playerFrame.src = currentData.url;
+
+  playerFrame.addEventListener('load', () => {
+    loadAltSources();
+    loadNextEpisode();
+  }, { once: true });
 });
