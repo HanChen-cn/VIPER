@@ -9,6 +9,7 @@ const nextEpisodeBtn = document.getElementById('nextEpisodeBtn');
 
 let currentData = null;
 let nextEpisodeLoadHandler = null;
+let cachedEpisodes = null;
 
 chrome.storage.session.get('playerData', (result) => {
   if (!result.playerData) {
@@ -69,17 +70,43 @@ function loadNextEpisode() {
     }, (res) => {
       if (!res || !res.success || !res.data || res.data.length === 0) return;
 
-      const episodes = res.data;
-      const currentIndex = episodes.findIndex(ep => ep.name === currentData.episode);
-      if (currentIndex < 0 || currentIndex >= episodes.length - 1) return;
+      cachedEpisodes = res.data;
+      const currentIndex = cachedEpisodes.findIndex(ep => ep.name === currentData.episode);
+      if (currentIndex < 0 || currentIndex >= cachedEpisodes.length - 1) return;
 
-      const nextEp = episodes[currentIndex + 1];
+      const nextEp = cachedEpisodes[currentIndex + 1];
       currentData.nextPlayUrl = nextEp.playUrl;
       currentData.nextEpisode = nextEp.name;
 
       nextEpisodeBtn.classList.remove('hidden');
     });
   }, 500);
+}
+
+function switchToEpisode(url, episodeName) {
+  currentData.url = url;
+  currentData.episode = episodeName;
+  delete currentData.nextPlayUrl;
+  delete currentData.nextEpisode;
+  cachedEpisodes = null;
+
+  chrome.storage.session.set({ playerData: currentData });
+
+  topTitle.textContent = `${currentData.name} - ${currentData.episode}`;
+  showInfo.textContent = `${currentData.name} · ${currentData.episode}`;
+  document.title = `${currentData.name} - ${currentData.episode}`;
+
+  nextEpisodeBtn.classList.add('hidden');
+
+  if (nextEpisodeLoadHandler) {
+    playerFrame.removeEventListener('load', nextEpisodeLoadHandler);
+  }
+  nextEpisodeLoadHandler = () => {
+    loadAltSources();
+    loadNextEpisode();
+  };
+  playerFrame.src = currentData.url;
+  playerFrame.addEventListener('load', nextEpisodeLoadHandler, { once: true });
 }
 
 function buildSourceList(currentUrl) {
@@ -156,27 +183,5 @@ document.addEventListener('click', (e) => {
 
 nextEpisodeBtn.addEventListener('click', () => {
   if (!currentData || !currentData.nextPlayUrl) return;
-
-  currentData.url = currentData.nextPlayUrl;
-  currentData.episode = currentData.nextEpisode;
-  delete currentData.nextPlayUrl;
-  delete currentData.nextEpisode;
-
-  chrome.storage.session.set({ playerData: currentData });
-
-  topTitle.textContent = `${currentData.name} - ${currentData.episode}`;
-  showInfo.textContent = `${currentData.name} · ${currentData.episode}`;
-  document.title = `${currentData.name} - ${currentData.episode}`;
-
-  nextEpisodeBtn.classList.add('hidden');
-
-  if (nextEpisodeLoadHandler) {
-    playerFrame.removeEventListener('load', nextEpisodeLoadHandler);
-  }
-  nextEpisodeLoadHandler = () => {
-    loadAltSources();
-    loadNextEpisode();
-  };
-  playerFrame.src = currentData.url;
-  playerFrame.addEventListener('load', nextEpisodeLoadHandler, { once: true });
+  switchToEpisode(currentData.nextPlayUrl, currentData.nextEpisode);
 });
