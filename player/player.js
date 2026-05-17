@@ -260,6 +260,12 @@ function setupAutoHide() {
 
   mouseTracker.addEventListener('mousemove', showPanel);
 
+  // 点击时临时穿透到 iframe，让播放/暂停生效
+  mouseTracker.addEventListener('mousedown', () => {
+    mouseTracker.style.pointerEvents = 'none';
+    setTimeout(() => { mouseTracker.style.pointerEvents = 'auto'; }, 100);
+  });
+
   // iframe 区域的 mouseenter 也需要触发（鼠标从 iframe 外进入时）
   playerFrame.addEventListener('mouseenter', () => {
     if (sourcePanel.style.opacity === '0' || sourcePanel.style.opacity === '') {
