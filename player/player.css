@@ -15,16 +15,6 @@ html, body {
 #playerContainer {
   width: 100%;
   height: 100%;
-  position: relative;
-}
-
-.mouse-tracker {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 999;
 }
 
 #playerFrame {
@@ -65,7 +55,6 @@ body:hover .top-bar {
   top: 12px;
   right: 16px;
   z-index: 1001;
-  transition: opacity 0.3s;
 }
 
 .toggle-btn {

@@ -1,4 +1,3 @@
-const sourcePanel = document.getElementById('sourcePanel');
 const playerFrame = document.getElementById('playerFrame');
 const toggleBtn = document.getElementById('toggleBtn');
 const sourceDropdown = document.getElementById('sourceDropdown');
@@ -238,40 +237,3 @@ copyUrlBtn.addEventListener('click', () => {
   });
 });
 
-let autoHideTimer = null;
-
-function setupAutoHide() {
-  const mouseTracker = document.getElementById('mouseTracker');
-
-  const showPanel = () => {
-    sourcePanel.style.opacity = '1';
-    sourcePanel.style.pointerEvents = 'auto';
-    mouseTracker.style.pointerEvents = 'auto';
-    clearTimeout(autoHideTimer);
-    if (!sourceDropdown.classList.contains('hidden') || !episodeDropdown.classList.contains('hidden')) return;
-    autoHideTimer = setTimeout(hidePanel, 3000);
-  };
-
-  const hidePanel = () => {
-    sourcePanel.style.opacity = '0';
-    sourcePanel.style.pointerEvents = 'none';
-    mouseTracker.style.pointerEvents = 'none';
-  };
-
-  mouseTracker.addEventListener('mousemove', showPanel);
-
-  // 点击时临时穿透到 iframe，让播放/暂停生效
-  mouseTracker.addEventListener('mousedown', () => {
-    mouseTracker.style.pointerEvents = 'none';
-    setTimeout(() => { mouseTracker.style.pointerEvents = 'auto'; }, 100);
-  });
-
-  // iframe 区域的 mouseenter 也需要触发（鼠标从 iframe 外进入时）
-  playerFrame.addEventListener('mouseenter', () => {
-    if (sourcePanel.style.opacity === '0' || sourcePanel.style.opacity === '') {
-      showPanel();
-    }
-  });
-}
-
-setupAutoHide();
