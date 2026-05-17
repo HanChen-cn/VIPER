@@ -246,19 +246,25 @@ function setupAutoHide() {
   const showPanel = () => {
     sourcePanel.style.opacity = '1';
     sourcePanel.style.pointerEvents = 'auto';
+    mouseTracker.style.pointerEvents = 'auto';
     clearTimeout(autoHideTimer);
     if (!sourceDropdown.classList.contains('hidden') || !episodeDropdown.classList.contains('hidden')) return;
-    autoHideTimer = setTimeout(() => {
-      sourcePanel.style.opacity = '0';
-      sourcePanel.style.pointerEvents = 'none';
-    }, 3000);
+    autoHideTimer = setTimeout(hidePanel, 3000);
+  };
+
+  const hidePanel = () => {
+    sourcePanel.style.opacity = '0';
+    sourcePanel.style.pointerEvents = 'none';
+    mouseTracker.style.pointerEvents = 'none';
   };
 
   mouseTracker.addEventListener('mousemove', showPanel);
 
-  mouseTracker.addEventListener('mousedown', () => {
-    mouseTracker.style.pointerEvents = 'none';
-    setTimeout(() => { mouseTracker.style.pointerEvents = 'auto'; }, 100);
+  // iframe 区域的 mouseenter 也需要触发（鼠标从 iframe 外进入时）
+  playerFrame.addEventListener('mouseenter', () => {
+    if (sourcePanel.style.opacity === '0' || sourcePanel.style.opacity === '') {
+      showPanel();
+    }
   });
 }
 
