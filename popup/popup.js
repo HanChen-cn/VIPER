@@ -249,7 +249,7 @@ async function loadHistory() {
         <span>搜索历史</span>
         <button class="clear-btn" id="clearSearchHistory">清空</button>
       </div>`;
-    for (const item of searchHistory) {
+    for (const item of searchHistory.slice(0, 6)) {
       html += `<div class="history-item" data-keyword="${escapeAttr(item.keyword)}">
         <span class="history-keyword">🔍 ${escapeHtml(item.keyword)}</span>
         <span class="history-time">${formatTime(item.timestamp)}</span>
