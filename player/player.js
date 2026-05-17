@@ -241,7 +241,7 @@ copyUrlBtn.addEventListener('click', () => {
 let autoHideTimer = null;
 
 function setupAutoHide() {
-  document.addEventListener('mousemove', () => {
+  const showPanel = () => {
     sourcePanel.style.opacity = '1';
     sourcePanel.style.pointerEvents = 'auto';
     clearTimeout(autoHideTimer);
@@ -250,7 +250,10 @@ function setupAutoHide() {
       sourcePanel.style.opacity = '0';
       sourcePanel.style.pointerEvents = 'none';
     }, 3000);
-  });
+  };
+
+  document.addEventListener('mousemove', showPanel);
+  playerFrame.addEventListener('mouseenter', showPanel);
 }
 
 setupAutoHide();
