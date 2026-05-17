@@ -1,3 +1,4 @@
+const sourcePanel = document.getElementById('sourcePanel');
 const playerFrame = document.getElementById('playerFrame');
 const toggleBtn = document.getElementById('toggleBtn');
 const sourceDropdown = document.getElementById('sourceDropdown');
@@ -236,3 +237,20 @@ copyUrlBtn.addEventListener('click', () => {
     setTimeout(() => { copyUrlBtn.textContent = '复制链接'; }, 2000);
   });
 });
+
+let autoHideTimer = null;
+
+function setupAutoHide() {
+  document.addEventListener('mousemove', () => {
+    sourcePanel.style.opacity = '1';
+    sourcePanel.style.pointerEvents = 'auto';
+    clearTimeout(autoHideTimer);
+    if (!sourceDropdown.classList.contains('hidden') || !episodeDropdown.classList.contains('hidden')) return;
+    autoHideTimer = setTimeout(() => {
+      sourcePanel.style.opacity = '0';
+      sourcePanel.style.pointerEvents = 'none';
+    }, 3000);
+  });
+}
+
+setupAutoHide();

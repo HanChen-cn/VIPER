@@ -55,6 +55,7 @@ body:hover .top-bar {
   top: 12px;
   right: 16px;
   z-index: 1001;
+  transition: opacity 0.3s;
 }
 
 .toggle-btn {
