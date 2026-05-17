@@ -13,6 +13,8 @@
 
   <div id="sourcePanel" class="source-panel">
     <button id="nextEpisodeBtn" class="next-episode-btn hidden">下一集 ▶</button>
+    <button id="episodeListBtn" class="episode-list-btn">剧集 ▼</button>
+    <button id="copyUrlBtn" class="copy-url-btn" title="复制播放地址">复制链接</button>
     <button id="toggleBtn" class="toggle-btn" title="换源">换源 ▼</button>
     <div id="sourceDropdown" class="source-dropdown hidden">
       <div class="dropdown-header">
@@ -20,6 +22,13 @@
         <button id="closeDropdown" class="close-dropdown">✕</button>
       </div>
       <div id="sourceList" class="source-list"></div>
+    </div>
+    <div id="episodeDropdown" class="episode-dropdown hidden">
+      <div class="dropdown-header">
+        <span class="episode-info">全部剧集</span>
+        <button id="closeEpisodeDropdown" class="close-dropdown">✕</button>
+      </div>
+      <div id="episodeList" class="episode-list"></div>
     </div>
   </div>
 

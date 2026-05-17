@@ -252,3 +252,104 @@ body:hover .top-bar {
 .next-episode-btn.hidden {
   display: none;
 }
+
+.episode-list-btn {
+  padding: 10px 16px;
+  border: 1px solid #667eea;
+  border-radius: 8px;
+  background: transparent;
+  color: #667eea;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  opacity: 0.85;
+  margin-right: 8px;
+}
+
+.episode-list-btn:hover {
+  background: rgba(102, 126, 234, 0.15);
+  opacity: 1;
+}
+
+.episode-dropdown {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 280px;
+  max-height: 400px;
+  background: #1a1a2e;
+  border: 1px solid #667eea;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  overflow-y: overlay;
+}
+
+.episode-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.episode-dropdown::-webkit-scrollbar-track {
+  background: #16213e;
+}
+
+.episode-dropdown::-webkit-scrollbar-thumb {
+  background: #3a3a5a;
+  border-radius: 4px;
+}
+
+.episode-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #667eea;
+}
+
+.episode-dropdown.hidden {
+  display: none;
+}
+
+.episode-list {
+  padding: 8px;
+}
+
+.episode-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  margin: 3px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  color: #ccc;
+  font-size: 13px;
+  border: 1px solid #2a2a4a;
+}
+
+.episode-item:hover {
+  background: rgba(102, 126, 234, 0.15);
+  color: #fff;
+  border-color: #667eea;
+}
+
+.episode-item.active {
+  background: rgba(102, 126, 234, 0.25);
+  color: #667eea;
+  font-weight: 500;
+  border-color: #667eea;
+}
+
+.copy-url-btn {
+  padding: 10px 16px;
+  border: 1px solid #667eea;
+  border-radius: 8px;
+  background: transparent;
+  color: #667eea;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  opacity: 0.85;
+  margin-right: 8px;
+}
+
+.copy-url-btn:hover {
+  background: rgba(102, 126, 234, 0.15);
+  opacity: 1;
+}
