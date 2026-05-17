@@ -10,6 +10,7 @@ const episodeListBtn = document.getElementById('episodeListBtn');
 const episodeDropdown = document.getElementById('episodeDropdown');
 const closeEpisodeDropdown = document.getElementById('closeEpisodeDropdown');
 const episodeList = document.getElementById('episodeList');
+const copyUrlBtn = document.getElementById('copyUrlBtn');
 
 let currentData = null;
 let nextEpisodeLoadHandler = null;
@@ -222,4 +223,16 @@ episodeListBtn.addEventListener('click', (e) => {
 
 closeEpisodeDropdown.addEventListener('click', () => {
   episodeDropdown.classList.add('hidden');
+});
+
+copyUrlBtn.addEventListener('click', () => {
+  if (!currentData || !currentData.url) return;
+
+  navigator.clipboard.writeText(currentData.url).then(() => {
+    copyUrlBtn.textContent = '已复制 ✓';
+    setTimeout(() => { copyUrlBtn.textContent = '复制链接'; }, 2000);
+  }).catch(() => {
+    copyUrlBtn.textContent = '复制失败';
+    setTimeout(() => { copyUrlBtn.textContent = '复制链接'; }, 2000);
+  });
 });
