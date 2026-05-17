@@ -8,7 +8,7 @@ Chrome/Edge Manifest V3 扩展 — 搜索 CMS 影视资源站，通过解析接�
 
 1. 打开 `chrome://extensions/`（Edge 用 `edge://extensions/`）
 2. 开启"开发者模式"
-3. "加载已解压的扩展程序" → 选择仓库根目录
+3. "加载已解压的扩展程序" → 选择 `extension` 文件夹
 4. 点击工具栏扩展图标测试 popup
 
 无构建、无编译、无 `npm install`。改文件 → 在 `chrome://extensions/` 重新加载 → 测试。
@@ -16,18 +16,18 @@ Chrome/Edge Manifest V3 扩展 — 搜索 CMS 影视资源站，通过解析接�
 ## 架构
 
 ```
-popup/popup.html + popup.js  ←→  background/service-worker.js  ←→  CMS API + 解析接口
-      (UI, 搜索/历史/收藏)         (消息路由, 预热)                   (5 资源站, 35 解析接口)
-                                         ↕
-                                  chrome.storage.local (历史, 收藏)
-                                  chrome.storage.session (播放数据, 固定模式)
+extension/popup/popup.html + popup.js  ←→  extension/background/service-worker.js  ←→  CMS API + 解析接口
+      (UI, 搜索/历史/收藏)                   (消息路由, 预热)                          (5 资源站, 35 解析接口)
+                                                 ↕
+                                          chrome.storage.local (历史, 收藏)
+                                          chrome.storage.session (播放数据, 固定模式)
 
-content/floating-panel.js + content-script.js  →  Shadow DOM 浮动播放器 (注入任意页面)
-player/player.html + player.js                   →  新标签页全屏播放器
+extension/content/floating-panel.js + content-script.js  →  Shadow DOM 浮动播放器 (注入任意页面)
+extension/player/player.html + player.js                   →  新标签页全屏播放器
 ```
 
-- `lib/` 是 service-worker 的共享代码（ES module，通过 `type: "module"` 导入）
-- `popup/popup.js` 通过 `chrome.runtime.sendMessage` 与 service-worker 通信；它本身不是 ES module（虽然用 `<script type="module">` 加载，但不从 lib/ 导入）
+- `extension/lib/` 是 service-worker 的共享代码（ES module，通过 `type: "module"` 导入）
+- `extension/popup/popup.js` 通过 `chrome.runtime.sendMessage` 与 service-worker 通信；它本身不是 ES module（虽然用 `<script type="module">` 加载，但不从 lib/ 导入）
 - Content script 注入到所有页面（`<all_urls>`），用 Shadow DOM 隔离样式
 
 ## 核心模式
@@ -40,19 +40,19 @@ player/player.html + player.js                   →  新标签页全屏播放�
 
 ## 文件编辑指南
 
-- `lib/api-sources.js` — CMS 资源站 URL 和解析接口列表。增删资源站改这里。
-- `lib/searcher.js` — 搜索编排、剧集去重、换源查询。
-- `lib/parser.js` — CMS API 响应标准化。CMS 格式：`vod_play_from` 按 `$$$` 分割，`vod_play_url` 按 `$$$` → `#` → `$`（名称$url）。
-- `lib/validator.js` — URL HEAD 验证（带超时）。`needsParsing()` 判断 URL 是否来自需解析的平台（爱奇艺、优酷、腾讯等）。
-- `lib/storage.js` — Chrome storage 封装。搜索历史最多 20 条，播放历史最多 50 条。
-- `popup/popup.js` — popup 所有 UI 逻辑。三个 tab：搜索/历史/收藏。
-- `content/floating-panel.js` — `FloatingPanel` 类。可拖拽、可缩放、可最小化。样式在 `getStyles()` 内联。
-- `player/player.js` — 全屏播放器。从 session storage 读取数据，构建换源列表。
+- `extension/lib/api-sources.js` — CMS 资源站 URL 和解析接口列表。增删资源站改这里。
+- `extension/lib/searcher.js` — 搜索编排、剧集去重、换源查询。
+- `extension/lib/parser.js` — CMS API 响应标准化。CMS 格式：`vod_play_from` 按 `$$$` 分割，`vod_play_url` 按 `$$$` → `#` → `$`（名称$url）。
+- `extension/lib/validator.js` — URL HEAD 验证（带超时）。`needsParsing()` 判断 URL 是否来自需解析的平台（爱奇艺、优酷、腾讯等）。
+- `extension/lib/storage.js` — Chrome storage 封装。搜索历史最多 20 条，播放历史最多 50 条。
+- `extension/popup/popup.js` — popup 所有 UI 逻辑。三个 tab：搜索/历史/收藏。
+- `extension/content/floating-panel.js` — `FloatingPanel` 类。可拖拽、可缩放、可最小化。样式在 `getStyles()` 内联。
+- `extension/player/player.js` — 全屏播放器。从 session storage 读取数据，构建换源列表。
 
 ## 注意事项
 
-- `manifest.json` 的 `host_permissions: ["<all_urls>"]` 是 CMS API 请求和 content script 注入的必要权限。
-- Service-worker 使用 `type: "module"` — 可以 ES module 导入 `lib/` 下的文件。
+- `extension/manifest.json` 的 `host_permissions: ["<all_urls>"]` 是 CMS API 请求和 content script 注入的必要权限。
+- Service-worker 使用 `type: "module"` — 可以 ES module 导入 `extension/lib/` 下的文件。
 - Content script 加载顺序很重要：先 `floating-panel.js`（定义 `FloatingPanel` 类），再 `content-script.js`（使用它）。
 - 解析接口预热用 `mode: "no-cors"` HEAD 请求 — 不透明响应也算成功。
 - `ensureContentScript()` 先 ping 再注入，防止重复注入。
