@@ -262,7 +262,7 @@ async function loadHistory() {
     html += `<div class="history-section">
       <div class="history-section-title"><span>播放历史</span></div>`;
     for (const item of playHistory) {
-      html += `<div class="history-item" data-url="${escapeAttr(item.url)}">
+      html += `<div class="history-item" data-url="${escapeAttr(item.url)}" data-name="${escapeAttr(item.name)}" data-episode="${escapeAttr(item.episode)}">
         <span class="history-keyword">▶ ${escapeHtml(item.name)} - ${escapeHtml(item.episode)}</span>
         <span class="history-time">${formatTime(item.timestamp)}</span>
       </div>`;
@@ -288,7 +288,7 @@ async function loadHistory() {
   // 点击播放历史直接播放
   historyContentEl.querySelectorAll('.history-item[data-url]').forEach(item => {
     item.addEventListener('click', () => {
-      chrome.runtime.sendMessage({ type: 'play', url: item.dataset.url });
+      chrome.runtime.sendMessage({ type: 'play', url: item.dataset.url, name: item.dataset.name, episode: item.dataset.episode });
     });
   });
 
