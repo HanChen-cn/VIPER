@@ -295,6 +295,10 @@ body:hover .top-bar {
   overflow-y: overlay;
 }
 
+.episode-dropdown .episode-info {
+  color: #ccc;
+}
+
 .episode-dropdown::-webkit-scrollbar {
   width: 6px;
 }
