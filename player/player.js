@@ -258,9 +258,7 @@ function setupAutoHide() {
 
   mouseTracker.addEventListener('mousedown', () => {
     mouseTracker.style.pointerEvents = 'none';
-  });
-  document.addEventListener('mouseup', () => {
-    mouseTracker.style.pointerEvents = 'auto';
+    setTimeout(() => { mouseTracker.style.pointerEvents = 'auto'; }, 100);
   });
 }
 
