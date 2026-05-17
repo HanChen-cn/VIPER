@@ -241,6 +241,8 @@ copyUrlBtn.addEventListener('click', () => {
 let autoHideTimer = null;
 
 function setupAutoHide() {
+  const mouseTracker = document.getElementById('mouseTracker');
+
   const showPanel = () => {
     sourcePanel.style.opacity = '1';
     sourcePanel.style.pointerEvents = 'auto';
@@ -252,8 +254,14 @@ function setupAutoHide() {
     }, 3000);
   };
 
-  document.addEventListener('mousemove', showPanel);
-  playerFrame.addEventListener('mouseenter', showPanel);
+  mouseTracker.addEventListener('mousemove', showPanel);
+
+  mouseTracker.addEventListener('mousedown', () => {
+    mouseTracker.style.pointerEvents = 'none';
+  });
+  document.addEventListener('mouseup', () => {
+    mouseTracker.style.pointerEvents = 'auto';
+  });
 }
 
 setupAutoHide();
