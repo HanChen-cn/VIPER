@@ -18,11 +18,20 @@ Chrome/Edge 浏览器扩展 — 输入电视剧/动漫名称，自动搜索全�
 
 ## 安装
 
-1. 下载/克隆本项目
+### 方式一：从 Release 下载（推荐）
+
+1. 前往 [Releases](../../releases) 页面，下载最新版本的 `VIPER-vX.X.X.zip`
+2. 解压 zip 文件，得到 `extension` 文件夹
+3. 打开 `chrome://extensions/`（Edge 浏览器用 `edge://extensions/`）
+4. 开启"开发者模式"
+5. 点击"加载已解压的扩展程序"，选择解压后的 `extension` 文件夹
+
+### 方式二：克隆源码
+
+1. `git clone https://github.com/HanChen-cn/VIPER.git`
 2. 打开 `chrome://extensions/`（Edge 浏览器用 `edge://extensions/`）
 3. 开启"开发者模式"
-4. 点击"加载已解压的扩展程序"
-5. 选择 `extension` 文件夹
+4. 点击"加载已解压的扩展程序"，选择项目中的 `extension` 文件夹
 
 > 详细图文教程请打开 `安装教程.html`
 
