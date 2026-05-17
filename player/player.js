@@ -6,6 +6,10 @@ const showInfo = document.getElementById('showInfo');
 const sourceList = document.getElementById('sourceList');
 const topTitle = document.getElementById('topTitle');
 const nextEpisodeBtn = document.getElementById('nextEpisodeBtn');
+const episodeListBtn = document.getElementById('episodeListBtn');
+const episodeDropdown = document.getElementById('episodeDropdown');
+const closeEpisodeDropdown = document.getElementById('closeEpisodeDropdown');
+const episodeList = document.getElementById('episodeList');
 
 let currentData = null;
 let nextEpisodeLoadHandler = null;
@@ -109,6 +113,25 @@ function switchToEpisode(url, episodeName) {
   playerFrame.addEventListener('load', nextEpisodeLoadHandler, { once: true });
 }
 
+function renderEpisodeList() {
+  episodeList.innerHTML = '';
+  if (!cachedEpisodes || cachedEpisodes.length === 0) {
+    episodeList.innerHTML = '<div class="source-empty">暂无剧集信息</div>';
+    return;
+  }
+
+  for (const ep of cachedEpisodes) {
+    const item = document.createElement('div');
+    item.className = 'episode-item' + (ep.name === currentData.episode ? ' active' : '');
+    item.textContent = ep.name;
+    item.addEventListener('click', () => {
+      episodeDropdown.classList.add('hidden');
+      switchToEpisode(ep.playUrl, ep.name);
+    });
+    episodeList.appendChild(item);
+  }
+}
+
 function buildSourceList(currentUrl) {
   sourceList.innerHTML = '';
 
@@ -178,10 +201,25 @@ closeDropdown.addEventListener('click', () => {
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.source-panel')) {
     sourceDropdown.classList.add('hidden');
+    episodeDropdown.classList.add('hidden');
   }
 });
 
 nextEpisodeBtn.addEventListener('click', () => {
   if (!currentData || !currentData.nextPlayUrl) return;
   switchToEpisode(currentData.nextPlayUrl, currentData.nextEpisode);
+});
+
+episodeListBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (!episodeDropdown.classList.contains('hidden')) {
+    episodeDropdown.classList.add('hidden');
+    return;
+  }
+  renderEpisodeList();
+  episodeDropdown.classList.remove('hidden');
+});
+
+closeEpisodeDropdown.addEventListener('click', () => {
+  episodeDropdown.classList.add('hidden');
 });
