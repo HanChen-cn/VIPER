@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.vipsearch.app.data.model.Episode
+import com.vipsearch.app.data.repository.HistoryRepository
 import com.vipsearch.app.data.repository.SearchRepository
 import com.vipsearch.app.domain.usecase.GetAltSourcesUseCase
 import com.vipsearch.app.ui.state.PlaybackSession
@@ -26,7 +27,8 @@ data class PlayerUiState(
 
 class PlayerViewModel(
   private val getAltSourcesUseCase: GetAltSourcesUseCase,
-  private val searchRepository: SearchRepository
+  private val searchRepository: SearchRepository,
+  private val historyRepository: HistoryRepository
 ) : ViewModel() {
   var state by mutableStateOf(PlayerUiState())
     private set
@@ -114,6 +116,13 @@ class PlayerViewModel(
       loadingExtraSources = false,
       error = ""
     )
+    viewModelScope.launch {
+      historyRepository.addPlayHistory(
+        showName = newSession.showName,
+        episodeName = newSession.episodeName,
+        url = newSession.primaryUrl
+      )
+    }
   }
 
   fun nextEpisode() {
@@ -126,12 +135,13 @@ class PlayerViewModel(
 
 class PlayerViewModelFactory(
   private val getAltSourcesUseCase: GetAltSourcesUseCase,
-  private val searchRepository: SearchRepository
+  private val searchRepository: SearchRepository,
+  private val historyRepository: HistoryRepository
 ) : ViewModelProvider.Factory {
   override fun <T : ViewModel> create(modelClass: Class<T>): T {
     if (modelClass.isAssignableFrom(PlayerViewModel::class.java)) {
       @Suppress("UNCHECKED_CAST")
-      return PlayerViewModel(getAltSourcesUseCase, searchRepository) as T
+      return PlayerViewModel(getAltSourcesUseCase, searchRepository, historyRepository) as T
     }
     throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
   }

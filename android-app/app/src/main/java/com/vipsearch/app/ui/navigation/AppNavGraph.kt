@@ -173,7 +173,8 @@ fun AppNavGraph(appContainer: AppContainer) {
         val vm: PlayerViewModel = viewModel(
           factory = PlayerViewModelFactory(
             getAltSourcesUseCase = appContainer.getAltSourcesUseCase,
-            searchRepository = appContainer.searchRepository
+            searchRepository = appContainer.searchRepository,
+            historyRepository = appContainer.historyRepository
           )
         )
         LaunchedEffect(PlaybackSessionStore.session) {

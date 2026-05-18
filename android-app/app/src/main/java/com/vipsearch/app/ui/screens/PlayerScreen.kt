@@ -2,6 +2,9 @@ package com.vipsearch.app.ui.screens
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.pm.ActivityInfo
 import android.view.View
 import android.view.ViewGroup
@@ -34,6 +37,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -324,6 +328,21 @@ fun PlayerScreen(
         modifier = Modifier.weight(1f)
       ) {
         Text(if (showSourceList.value) "收起换源 ▲" else "换源 ▼")
+      }
+
+      OutlinedButton(
+        onClick = {
+          val url = currentUrl.value
+          if (url.isNotBlank()) {
+            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            clipboard.setPrimaryClip(ClipData.newPlainText("播放链接", url))
+            statusHint.value = "链接已复制"
+          }
+        }
+      ) {
+        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+        Spacer(modifier = Modifier.width(4.dp))
+        Text("复制")
       }
     }
 
