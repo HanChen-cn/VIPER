@@ -34,12 +34,6 @@ class UrlClassifier {
     if (directMediaPatterns.any { it.containsMatchIn(normalized) }) {
       return PlaybackRoute.EXO_PLAYER
     }
-    if (parseNeededPatterns.any { it.containsMatchIn(normalized) }) {
-      return PlaybackRoute.WEB_VIEW
-    }
-    if (parserPagePatterns.any { it.containsMatchIn(normalized) }) {
-      return PlaybackRoute.WEB_VIEW
-    }
-    return PlaybackRoute.EXO_PLAYER
+    return PlaybackRoute.WEB_VIEW
   }
 }

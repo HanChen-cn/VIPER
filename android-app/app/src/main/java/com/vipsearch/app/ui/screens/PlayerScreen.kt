@@ -454,17 +454,35 @@ private fun WebViewPane(url: String, onWebError: (String) -> Unit) {
   val cookieManager = CookieManager.getInstance()
   cookieManager.setAcceptCookie(true)
 
+  val fullscreenCss = """
+    javascript:(function(){
+      var s=document.createElement('style');
+      s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;background:#000!important}video,iframe,.player,.dplayer,.video-js,.art-video-player,[class*=player]{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;position:fixed!important;top:0!important;left:0!important;z-index:9999!important}header,footer,nav,.ad,.ads,.advertisement,[class*=header],[class*=footer],[class*=nav]{display:none!important}';
+      document.head.appendChild(s);
+    })()
+  """.trimIndent()
+
   AndroidView(
     modifier = Modifier.fillMaxSize(),
     factory = { ctx ->
       WebView(ctx).apply {
         cookieManager.setAcceptThirdPartyCookies(this, true)
+        setBackgroundColor(android.graphics.Color.BLACK)
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
         settings.mediaPlaybackRequiresUserGesture = false
         settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        settings.useWideViewPort = true
+        settings.loadWithOverviewMode = true
+        settings.userAgentString = settings.userAgentString
+          .replace(Regex("\\s*wv\\b"), "")
+          .replace("; ${android.os.Build.MODEL}", "")
         webChromeClient = WebChromeClient()
         webViewClient = object : WebViewClient() {
+          override fun onPageFinished(view: WebView?, pageUrl: String?) {
+            view?.evaluateJavascript(fullscreenCss, null)
+          }
+
           @Deprecated("Deprecated in Java")
           override fun onReceivedError(
             view: WebView?,
