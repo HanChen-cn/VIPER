@@ -180,6 +180,13 @@ fun PlayerScreen(
 
   // Save position and release ExoPlayer on final dispose
   DisposableEffect(Unit) {
+    // Ensure correct window state on entry
+    activity?.let {
+      val window = it.window
+      WindowCompat.setDecorFitsSystemWindows(window, true)
+      WindowInsetsControllerCompat(window, window.decorView)
+        .show(WindowInsetsCompat.Type.systemBars())
+    }
     onDispose {
       exoPlayer.value?.let {
         playbackPositions[exoPlayerUrl.value] = it.currentPosition
