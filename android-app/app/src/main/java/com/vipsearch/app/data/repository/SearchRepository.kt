@@ -20,6 +20,9 @@ class SearchRepository(
   private val cmsApiClient: CmsApiClient,
   private val parserApiClient: ParserApiClient
 ) {
+  @Volatile
+  private var lastSearchResults: List<Show> = emptyList()
+
   private suspend fun fetchAllSources(keyword: String): List<List<Show>> {
     val bundle = apiSourcesProvider.load()
     val enabledSources = bundle.cmsSources.filter { it.enabled }
@@ -64,7 +67,7 @@ class SearchRepository(
           }
         }
       )
-    }
+    }.also { lastSearchResults = it }
   }
 
   suspend fun getAltSources(
@@ -91,6 +94,11 @@ class SearchRepository(
 
   suspend fun getEpisodeList(showName: String): List<Episode> {
     if (showName.isBlank()) return emptyList()
+
+    val cached = lastSearchResults.firstOrNull { it.name.trim() == showName.trim() }
+    if (cached != null && cached.episodes.isNotEmpty()) {
+      return cached.episodes
+    }
 
     val merged = searchAndMerge(showName)
     val show = merged.firstOrNull { it.name.trim() == showName.trim() }

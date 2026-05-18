@@ -32,12 +32,16 @@ class PlayerViewModel(
     private set
 
   fun bindSession(session: PlaybackSession) {
-    state = state.copy(session = session, error = "")
+    state = state.copy(session = session, extraSources = emptyList(), error = "")
     if (session.primaryUrl.isBlank() || session.showName.isBlank() || session.episodeName.isBlank()) {
       return
     }
-    loadExtraSources(session)
     loadEpisodeList(session.showName, session.episodeName)
+  }
+
+  fun requestExtraSources() {
+    if (state.loadingExtraSources || state.extraSources.isNotEmpty()) return
+    loadExtraSources(state.session)
   }
 
   private fun loadExtraSources(session: PlaybackSession) {
@@ -107,9 +111,9 @@ class PlayerViewModel(
       currentEpisodeIndex = index,
       hasNextEpisode = index < state.episodes.size - 1,
       extraSources = emptyList(),
+      loadingExtraSources = false,
       error = ""
     )
-    loadExtraSources(newSession)
   }
 
   fun nextEpisode() {

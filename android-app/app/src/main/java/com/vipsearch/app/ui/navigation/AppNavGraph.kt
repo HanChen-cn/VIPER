@@ -183,7 +183,8 @@ fun AppNavGraph(appContainer: AppContainer) {
           uiState = vm.state,
           onBack = { navController.popBackStack() },
           onSwitchEpisode = vm::switchEpisode,
-          onNextEpisode = vm::nextEpisode
+          onNextEpisode = vm::nextEpisode,
+          onRequestExtraSources = vm::requestExtraSources
         )
       }
     }

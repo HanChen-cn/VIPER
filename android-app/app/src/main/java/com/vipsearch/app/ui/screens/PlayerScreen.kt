@@ -41,6 +41,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -74,7 +75,8 @@ fun PlayerScreen(
   uiState: PlayerUiState,
   onBack: () -> Unit,
   onSwitchEpisode: (Int) -> Unit,
-  onNextEpisode: () -> Unit
+  onNextEpisode: () -> Unit,
+  onRequestExtraSources: () -> Unit
 ) {
   val session = uiState.session
   val coordinator = remember { PlayerCoordinator() }
@@ -84,6 +86,7 @@ fun PlayerScreen(
   val statusHint = remember { mutableStateOf("") }
   val playbackPositions = remember { mutableStateMapOf<String, Long>() }
   val showSourceList = remember { mutableStateOf(false) }
+  val isVideoLoading = remember { mutableStateOf(true) }
   val isVideoFullscreen = remember { mutableStateOf(false) }
   val fullscreenView = remember { mutableStateOf<View?>(null) }
   val fullscreenCallback = remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
@@ -123,6 +126,7 @@ fun PlayerScreen(
 
   fun moveTo(url: String) {
     currentUrl.value = url
+    isVideoLoading.value = true
     target.value = coordinator.resolve(url)
   }
 
@@ -234,19 +238,35 @@ fun PlayerScreen(
           url = playbackTarget.mediaUrl,
           startPositionMs = playbackPositions[playbackTarget.mediaUrl] ?: 0L,
           onSavePosition = { pos -> playbackPositions[playbackTarget.mediaUrl] = pos },
-          onPlaybackError = { errorMsg -> autoFallback(errorMsg) }
+          onPlaybackError = { errorMsg -> autoFallback(errorMsg) },
+          onPlaybackReady = { isVideoLoading.value = false }
         )
         is PlaybackTarget.Web -> WebViewPane(
           url = playbackTarget.pageUrl,
           onWebError = { errorMsg -> autoFallback(errorMsg) },
           onShowCustomView = ::enterFullscreen,
-          onHideCustomView = { exitFullscreen() }
+          onHideCustomView = { exitFullscreen() },
+          onPageLoaded = { isVideoLoading.value = false }
         )
         null -> Box(
           modifier = Modifier.fillMaxSize(),
           contentAlignment = Alignment.Center
         ) {
+          isVideoLoading.value = false
           Text("请先从搜索页选择剧集", color = Color.White)
+        }
+      }
+
+      if (isVideoLoading.value && target.value != null) {
+        Box(
+          modifier = Modifier.fillMaxSize(),
+          contentAlignment = Alignment.Center
+        ) {
+          CircularProgressIndicator(
+            color = Color.White.copy(alpha = 0.7f),
+            modifier = Modifier.size(36.dp),
+            strokeWidth = 3.dp
+          )
         }
       }
 
@@ -296,7 +316,11 @@ fun PlayerScreen(
       }
 
       FilledTonalButton(
-        onClick = { showSourceList.value = !showSourceList.value },
+        onClick = {
+          val expanding = !showSourceList.value
+          showSourceList.value = expanding
+          if (expanding) onRequestExtraSources()
+        },
         modifier = Modifier.weight(1f)
       ) {
         Text(if (showSourceList.value) "收起换源 ▲" else "换源 ▼")
@@ -420,7 +444,8 @@ private fun ExoPlayerPane(
   url: String,
   startPositionMs: Long,
   onSavePosition: (Long) -> Unit,
-  onPlaybackError: (String) -> Unit
+  onPlaybackError: (String) -> Unit,
+  onPlaybackReady: (() -> Unit)? = null
 ) {
   val context = LocalContext.current
   val exoPlayer = remember(url) {
@@ -434,6 +459,9 @@ private fun ExoPlayerPane(
 
   DisposableEffect(exoPlayer) {
     val listener = object : Player.Listener {
+      override fun onPlaybackStateChanged(playbackState: Int) {
+        if (playbackState == Player.STATE_READY) onPlaybackReady?.invoke()
+      }
       override fun onPlayerError(error: PlaybackException) {
         onPlaybackError(error.message ?: "播放器错误")
       }
@@ -471,7 +499,8 @@ private fun WebViewPane(
   url: String,
   onWebError: (String) -> Unit,
   onShowCustomView: ((View, WebChromeClient.CustomViewCallback) -> Unit)? = null,
-  onHideCustomView: (() -> Unit)? = null
+  onHideCustomView: (() -> Unit)? = null,
+  onPageLoaded: (() -> Unit)? = null
 ) {
   val cookieManager = CookieManager.getInstance()
   cookieManager.setAcceptCookie(true)
@@ -512,6 +541,7 @@ private fun WebViewPane(
         webViewClient = object : WebViewClient() {
           override fun onPageFinished(view: WebView?, pageUrl: String?) {
             view?.evaluateJavascript(fullscreenCss, null)
+            onPageLoaded?.invoke()
           }
 
           override fun onReceivedError(
