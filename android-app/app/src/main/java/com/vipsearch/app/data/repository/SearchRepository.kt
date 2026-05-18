@@ -20,17 +20,20 @@ class SearchRepository(
   private val cmsApiClient: CmsApiClient,
   private val parserApiClient: ParserApiClient
 ) {
-  private suspend fun searchAndMerge(keyword: String): List<Show> {
+  private suspend fun fetchAllSources(keyword: String): List<List<Show>> {
     val bundle = apiSourcesProvider.load()
     val enabledSources = bundle.cmsSources.filter { it.enabled }
     if (enabledSources.isEmpty()) return emptyList()
 
-    val sourceResults = coroutineScope {
+    return coroutineScope {
       enabledSources.map { source ->
         async { fetchSourceShows(source, keyword) }
       }.awaitAll()
     }.filter { it.isNotEmpty() }
+  }
 
+  private suspend fun searchAndMerge(keyword: String): List<Show> {
+    val sourceResults = fetchAllSources(keyword)
     if (sourceResults.isEmpty()) return emptyList()
     return mergeAndDedupe(sourceResults)
   }
@@ -71,8 +74,10 @@ class SearchRepository(
   ): List<String> {
     if (showName.isBlank() || episodeName.isBlank()) return emptyList()
 
-    val merged = searchAndMerge(showName)
-    val targetShow = merged.firstOrNull { it.name.trim() == showName.trim() }
+    val sourceResults = fetchAllSources(showName)
+    if (sourceResults.isEmpty()) return emptyList()
+    val allShows = mergeOnly(sourceResults)
+    val targetShow = allShows.firstOrNull { it.name.trim() == showName.trim() }
       ?: return emptyList()
 
     val seen = linkedSetOf<String>()
@@ -97,10 +102,16 @@ class SearchRepository(
     val fallbackApis = if (mobileApis.isNotEmpty()) mobileApis else bundle.parseApis
     val bestApi = if (warmupApis.isNotEmpty()) warmupApis.first().api else fallbackApis.firstOrNull()
 
+    val rankedApis = if (warmupApis.isNotEmpty()) warmupApis.map { it.api } else fallbackApis
+
     return deduplicateEpisodes(show.episodes).map { ep ->
+      val encoded = urlEncode(ep.playUrl)
+      val alt = rankedApis.take(8).map { api -> "${api.url}$encoded" }
       if (needsParsing(ep.playUrl) && bestApi != null) {
-        ep.copy(playUrl = parserApiClient.buildParseUrl(bestApi, urlEncode(ep.playUrl)))
-      } else ep
+        ep.copy(playUrl = parserApiClient.buildParseUrl(bestApi, encoded), altUrls = alt)
+      } else {
+        ep.copy(altUrls = alt)
+      }
     }
   }
 
@@ -183,7 +194,7 @@ class SearchRepository(
       .replace("+", "%20")
 
   companion object {
-    fun mergeAndDedupe(allResults: List<List<Show>>): List<Show> {
+    fun mergeOnly(allResults: List<List<Show>>): List<Show> {
       val merged = linkedMapOf<String, Show>()
 
       allResults.flatten().forEach { show ->
@@ -192,20 +203,27 @@ class SearchRepository(
         if (existing == null) {
           merged[key] = show.copy(episodes = show.episodes.toMutableList())
         } else {
-          val mergedEpisodes = (existing.episodes + show.episodes)
-            .groupBy { it.name.trim() }
-            .mapNotNull { (_, list) -> list.firstOrNull() }
           merged[key] = existing.copy(
             pic = existing.pic.ifBlank { show.pic },
             year = existing.year.ifBlank { show.year },
             type = existing.type.ifBlank { show.type },
             remarks = existing.remarks.ifBlank { show.remarks },
-            episodes = mergedEpisodes
+            episodes = existing.episodes + show.episodes
           )
         }
       }
 
       return merged.values.toList()
+    }
+
+    fun mergeAndDedupe(allResults: List<List<Show>>): List<Show> {
+      return mergeOnly(allResults).map { show ->
+        show.copy(
+          episodes = show.episodes
+            .groupBy { it.name.trim() }
+            .mapNotNull { (_, list) -> list.firstOrNull() }
+        )
+      }
     }
 
     fun buildAltUrls(parseApis: List<ParseApi>, rawUrl: String): List<String> {

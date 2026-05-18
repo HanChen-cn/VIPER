@@ -27,10 +27,18 @@ object WarmupManager {
   }
 
   suspend fun awaitResult(): List<ParseApiHealth> {
-    mutex.withLock {
+    if (done) return rankedApis
+
+    val deferred = mutex.withLock {
       if (done) return rankedApis
-      warmupDeferred?.let {
-        rankedApis = runCatching { it.await() }.getOrDefault(emptyList())
+      warmupDeferred
+    } ?: return rankedApis
+
+    val result = runCatching { deferred.await() }.getOrDefault(emptyList())
+
+    mutex.withLock {
+      if (!done) {
+        rankedApis = result
         done = true
       }
     }

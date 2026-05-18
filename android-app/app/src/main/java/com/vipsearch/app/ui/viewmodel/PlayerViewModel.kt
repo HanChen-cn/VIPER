@@ -22,7 +22,6 @@ data class PlayerUiState(
   val currentEpisodeIndex: Int = -1,
   val hasNextEpisode: Boolean = false,
   val loadingEpisodes: Boolean = false,
-  val isFullscreen: Boolean = false
 )
 
 class PlayerViewModel(
@@ -119,9 +118,6 @@ class PlayerViewModel(
     }
   }
 
-  fun toggleFullscreen() {
-    state = state.copy(isFullscreen = !state.isFullscreen)
-  }
 }
 
 class PlayerViewModelFactory(

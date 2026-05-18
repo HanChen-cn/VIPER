@@ -9,6 +9,8 @@ import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
@@ -72,8 +74,7 @@ fun PlayerScreen(
   uiState: PlayerUiState,
   onBack: () -> Unit,
   onSwitchEpisode: (Int) -> Unit,
-  onNextEpisode: () -> Unit,
-  onToggleFullscreen: () -> Unit
+  onNextEpisode: () -> Unit
 ) {
   val session = uiState.session
   val coordinator = remember { PlayerCoordinator() }
@@ -264,14 +265,15 @@ fun PlayerScreen(
           }
         },
         modifier = Modifier
-          .align(Alignment.BottomEnd)
-          .padding(4.dp)
-          .size(36.dp)
+          .align(Alignment.TopEnd)
+          .padding(8.dp)
+          .size(40.dp)
       ) {
         Icon(
           Icons.Default.Fullscreen,
           contentDescription = "全屏",
-          tint = Color.White.copy(alpha = 0.8f)
+          tint = Color.White.copy(alpha = 0.85f),
+          modifier = Modifier.size(28.dp)
         )
       }
     }
@@ -512,14 +514,14 @@ private fun WebViewPane(
             view?.evaluateJavascript(fullscreenCss, null)
           }
 
-          @Deprecated("Deprecated in Java")
           override fun onReceivedError(
             view: WebView?,
-            errorCode: Int,
-            description: String?,
-            failingUrl: String?
+            request: WebResourceRequest?,
+            error: WebResourceError?
           ) {
-            onWebError(description ?: "WebView 加载失败")
+            if (request?.isForMainFrame == true) {
+              onWebError(error?.description?.toString() ?: "WebView 加载失败")
+            }
           }
         }
         loadUrl(url)
