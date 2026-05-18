@@ -40,26 +40,47 @@ fun AppNavGraph(appContainer: AppContainer) {
     BottomTab(route = "history", title = "历史"),
     BottomTab(route = "favorites", title = "收藏")
   )
+  val navBackStackEntry by navController.currentBackStackEntryAsState()
+  val currentDestination = navBackStackEntry?.destination
+  val showBottomBar = tabs.any { tab ->
+    currentDestination?.hierarchy?.any { it.route == tab.route } == true
+  }
+  val searchVm: SearchViewModel = viewModel(
+    factory = SearchViewModelFactory(
+      searchUseCase = appContainer.searchUseCase,
+      historyRepository = appContainer.historyRepository,
+      favoritesRepository = appContainer.favoritesRepository
+    )
+  )
+
+  fun navigateToSearchAndQuery(keyword: String) {
+    searchVm.searchWithKeyword(keyword)
+    navController.navigate("search") {
+      popUpTo(navController.graph.startDestinationId) { saveState = true }
+      launchSingleTop = true
+      restoreState = true
+    }
+  }
 
   Scaffold(
     bottomBar = {
-      val navBackStackEntry by navController.currentBackStackEntryAsState()
-      val currentDestination = navBackStackEntry?.destination
-      NavigationBar {
-        tabs.forEach { tab ->
-          val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
-          NavigationBarItem(
-            selected = selected,
-            onClick = {
-              navController.navigate(tab.route) {
-                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                launchSingleTop = true
-                restoreState = true
-              }
-            },
-            label = { Text(tab.title) },
-            icon = {}
-          )
+      if (showBottomBar) {
+        NavigationBar {
+          tabs.forEach { tab ->
+            val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
+            NavigationBarItem(
+              selected = selected,
+              onClick = {
+                navController.navigate(tab.route) {
+                  popUpTo(navController.graph.startDestinationId) { saveState = true }
+                  launchSingleTop = true
+                  restoreState = true
+                }
+              },
+              label = { Text(tab.title) },
+              icon = {}
+            )
+          }
         }
       }
     }
@@ -70,20 +91,13 @@ fun AppNavGraph(appContainer: AppContainer) {
       modifier = Modifier.padding(paddingValues)
     ) {
       composable("search") {
-        val vm: SearchViewModel = viewModel(
-          factory = SearchViewModelFactory(
-            searchUseCase = appContainer.searchUseCase,
-            historyRepository = appContainer.historyRepository,
-            favoritesRepository = appContainer.favoritesRepository
-          )
-        )
         SearchScreen(
-          state = vm.state,
-          onKeywordChange = vm::onKeywordChange,
-          onSearch = vm::search,
-          onAddFavorite = vm::addFavorite,
+          state = searchVm.state,
+          onKeywordChange = searchVm::onKeywordChange,
+          onSearch = searchVm::search,
+          onAddFavorite = searchVm::addFavorite,
           onEpisodeClick = { showName, episodeName, playUrl, altUrls ->
-            vm.recordPlay(showName = showName, episodeName = episodeName, url = playUrl)
+            searchVm.recordPlay(showName = showName, episodeName = episodeName, url = playUrl)
             PlaybackSessionStore.update(
               showName = showName,
               episodeName = episodeName,
@@ -101,7 +115,19 @@ fun AppNavGraph(appContainer: AppContainer) {
         HistoryScreen(
           state = vm.state,
           onReload = vm::load,
-          onClearSearchHistory = vm::clearSearchHistory
+          onClearSearchHistory = vm::clearSearchHistory,
+          onSearchKeyword = { keyword ->
+            navigateToSearchAndQuery(keyword)
+          },
+          onPlayHistory = { showName, episodeName, url ->
+            PlaybackSessionStore.update(
+              showName = showName,
+              episodeName = episodeName,
+              primaryUrl = url,
+              altUrls = emptyList()
+            )
+            navController.navigate("player")
+          }
         )
       }
       composable("favorites") {
@@ -111,7 +137,10 @@ fun AppNavGraph(appContainer: AppContainer) {
         FavoritesScreen(
           state = vm.state,
           onReload = vm::load,
-          onRemove = vm::remove
+          onRemove = vm::remove,
+          onSearchFavorite = { showName ->
+            navigateToSearchAndQuery(showName)
+          }
         )
       }
       composable("player") {
@@ -128,7 +157,8 @@ fun AppNavGraph(appContainer: AppContainer) {
           session = vm.state.session,
           extraSources = vm.state.extraSources,
           loadingExtraSources = vm.state.loadingExtraSources,
-          error = vm.state.error
+          error = vm.state.error,
+          onBack = { navController.popBackStack() }
         )
       }
     }

@@ -22,12 +22,22 @@ class UrlClassifier {
     Regex("pptv\\.com", RegexOption.IGNORE_CASE)
   )
 
+  private val parserPagePatterns = listOf(
+    Regex("[?&](url|v)=", RegexOption.IGNORE_CASE),
+    Regex("jiexi|jx", RegexOption.IGNORE_CASE),
+    Regex("%3A%2F%2F", RegexOption.IGNORE_CASE)
+  )
+
   fun classify(url: String): PlaybackRoute {
-    if (url.isBlank()) return PlaybackRoute.WEB_VIEW
-    if (directMediaPatterns.any { it.containsMatchIn(url) }) {
+    val normalized = url.trim()
+    if (normalized.isBlank()) return PlaybackRoute.WEB_VIEW
+    if (directMediaPatterns.any { it.containsMatchIn(normalized) }) {
       return PlaybackRoute.EXO_PLAYER
     }
-    if (parseNeededPatterns.any { it.containsMatchIn(url) }) {
+    if (parseNeededPatterns.any { it.containsMatchIn(normalized) }) {
+      return PlaybackRoute.WEB_VIEW
+    }
+    if (parserPagePatterns.any { it.containsMatchIn(normalized) }) {
       return PlaybackRoute.WEB_VIEW
     }
     return PlaybackRoute.EXO_PLAYER

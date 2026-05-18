@@ -1,7 +1,5 @@
 package com.vipsearch.app.ui.screens
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,10 +11,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.vipsearch.app.data.model.Show
@@ -30,6 +31,8 @@ fun SearchScreen(
   onAddFavorite: (show: Show) -> Unit,
   onEpisodeClick: (showName: String, episodeName: String, playUrl: String, altUrls: List<String>) -> Unit
 ) {
+  val expandedEpisodes = remember { mutableStateMapOf<String, Boolean>() }
+
   Column(
     modifier = Modifier
       .fillMaxSize()
@@ -92,18 +95,27 @@ fun SearchScreen(
               text = listOf(show.type, show.year, show.remarks).filter { it.isNotBlank() }.joinToString(" · "),
               style = MaterialTheme.typography.bodySmall
             )
-            Box {
-              Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                show.episodes.take(6).forEach { ep ->
+            val expanded = expandedEpisodes[show.name] == true
+            val visibleEpisodes = if (expanded) show.episodes else show.episodes.take(12)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+              visibleEpisodes.forEach { ep ->
+                OutlinedButton(
+                  onClick = {
+                    onEpisodeClick(show.name, ep.name, ep.playUrl, ep.altUrls)
+                  },
+                  modifier = Modifier.fillMaxWidth()
+                ) {
+                  Text(ep.name)
+                }
+              }
+              if (show.episodes.size > 12) {
+                TextButton(
+                  onClick = { expandedEpisodes[show.name] = !expanded },
+                  modifier = Modifier.fillMaxWidth()
+                ) {
                   Text(
-                    text = ep.name,
-                    modifier = Modifier
-                      .fillMaxWidth()
-                      .clickable {
-                        onEpisodeClick(show.name, ep.name, ep.playUrl, ep.altUrls)
-                      }
-                      .padding(vertical = 4.dp),
-                    style = MaterialTheme.typography.bodyMedium
+                    if (expanded) "收起剧集"
+                    else "展开全部剧集（${show.episodes.size}）"
                   )
                 }
               }

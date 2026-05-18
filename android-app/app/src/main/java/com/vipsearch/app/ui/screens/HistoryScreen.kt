@@ -5,10 +5,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,7 +23,9 @@ import com.vipsearch.app.ui.viewmodel.HistoryUiState
 fun HistoryScreen(
   state: HistoryUiState,
   onReload: () -> Unit,
-  onClearSearchHistory: () -> Unit
+  onClearSearchHistory: () -> Unit,
+  onSearchKeyword: (String) -> Unit,
+  onPlayHistory: (showName: String, episodeName: String, url: String) -> Unit
 ) {
   LaunchedEffect(Unit) {
     onReload()
@@ -51,7 +56,23 @@ fun HistoryScreen(
         item { Text("暂无搜索历史") }
       } else {
         items(state.searchHistory) { item ->
-          Text("🔍 ${item.keyword}")
+          Card(modifier = Modifier.fillMaxWidth()) {
+            Row(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+              horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+              Text(
+                text = item.keyword,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge
+              )
+              OutlinedButton(onClick = { onSearchKeyword(item.keyword) }) {
+                Text("再次搜索")
+              }
+            }
+          }
         }
       }
 
@@ -62,7 +83,25 @@ fun HistoryScreen(
         item { Text("暂无播放历史") }
       } else {
         items(state.playHistory) { item ->
-          Text("▶ ${item.showName} - ${item.episodeName}")
+          Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+              modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+              verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              Text(
+                text = "${item.showName} - ${item.episodeName}",
+                style = MaterialTheme.typography.bodyLarge
+              )
+              Button(
+                onClick = { onPlayHistory(item.showName, item.episodeName, item.url) },
+                modifier = Modifier.fillMaxWidth()
+              ) {
+                Text("继续播放")
+              }
+            }
+          }
         }
       }
     }

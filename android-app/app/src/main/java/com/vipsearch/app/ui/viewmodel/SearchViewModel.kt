@@ -50,6 +50,13 @@ class SearchViewModel(
     }
   }
 
+  fun searchWithKeyword(keyword: String) {
+    val normalized = keyword.trim()
+    if (normalized.isBlank()) return
+    state = state.copy(keyword = normalized, notice = "")
+    search()
+  }
+
   fun addFavorite(show: Show) {
     viewModelScope.launch {
       runCatching { favoritesRepository.addFavorite(show) }

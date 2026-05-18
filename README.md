@@ -2,6 +2,9 @@
 
 Chrome/Edge 浏览器扩展 — 输入电视剧/动漫名称，自动搜索全网可播放资源，一键播放。
 
+仓库同时包含 `android-app/` 原生 Android 客户端（搜索、播放、历史、收藏）。
+Android 版本支持 `android-v*` tag 自动构建，构建成功后会把 `APK` 同时上传到 `GitHub Release` 与 `Actions Artifacts`。
+
 妈妈再也不用充会员、到处找资源了。
 
 告别满屏广告。直接搜索剧名，看就完事！

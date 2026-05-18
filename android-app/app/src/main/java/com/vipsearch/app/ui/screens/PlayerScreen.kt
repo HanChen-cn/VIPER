@@ -1,10 +1,11 @@
 package com.vipsearch.app.ui.screens
 
 import android.annotation.SuppressLint
+import android.webkit.CookieManager
 import android.webkit.WebChromeClient
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,10 +13,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -42,7 +45,8 @@ fun PlayerScreen(
   session: PlaybackSession,
   extraSources: List<String>,
   loadingExtraSources: Boolean,
-  error: String
+  error: String,
+  onBack: () -> Unit
 ) {
   val coordinator = remember { PlayerCoordinator() }
   val switchController = remember { SourceSwitchController() }
@@ -87,7 +91,12 @@ fun PlayerScreen(
       .padding(16.dp),
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
-    Text("播放器", style = MaterialTheme.typography.headlineSmall)
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+      OutlinedButton(onClick = onBack) {
+        Text("返回")
+      }
+      Text("播放器", style = MaterialTheme.typography.headlineSmall)
+    }
     Text("剧名：${session.showName.ifBlank { "-" }}")
     Text("剧集：${session.episodeName.ifBlank { "-" }}")
     Text("当前播放路由：${routeText.value}")
@@ -147,20 +156,28 @@ fun PlayerScreen(
     ) {
       itemsIndexed(switchController.all()) { index, sourceUrl ->
         val selected = sourceUrl == currentUrl.value
-        Text(
-          text = "${index + 1}. $sourceUrl",
-          color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-          modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
+        val buttonText = if (selected) "当前源 ${index + 1}" else "切换到源 ${index + 1}"
+        if (selected) {
+          Button(
+            onClick = {},
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Text("$buttonText · $sourceUrl")
+          }
+        } else {
+          OutlinedButton(
+            onClick = {
               val switched = switchController.switchTo(index)
               if (!switched.isNullOrBlank()) {
                 moveTo(switched)
                 statusHint.value = ""
               }
-            }
-            .padding(vertical = 4.dp)
-        )
+            },
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Text("$buttonText · $sourceUrl")
+          }
+        }
       }
     }
   }
@@ -219,13 +236,18 @@ private fun ExoPlayerPane(
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun WebViewPane(url: String, onWebError: (String) -> Unit) {
+  val cookieManager = CookieManager.getInstance()
+  cookieManager.setAcceptCookie(true)
+
   AndroidView(
     modifier = Modifier.fillMaxSize(),
     factory = { ctx ->
       WebView(ctx).apply {
+        cookieManager.setAcceptThirdPartyCookies(this, true)
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
         settings.mediaPlaybackRequiresUserGesture = false
+        settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
         webChromeClient = WebChromeClient()
         webViewClient = object : WebViewClient() {
           @Deprecated("Deprecated in Java")
