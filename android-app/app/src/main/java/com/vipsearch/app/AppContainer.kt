@@ -6,6 +6,10 @@ import com.vipsearch.app.data.remote.ApiSourcesProvider
 import com.vipsearch.app.data.remote.CmsApiClient
 import com.vipsearch.app.data.remote.NetworkConfig
 import com.vipsearch.app.data.remote.ParserApiClient
+import com.vipsearch.app.data.remote.WarmupManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import com.vipsearch.app.data.repository.AltSourceRepository
 import com.vipsearch.app.data.repository.FavoritesRepository
 import com.vipsearch.app.data.repository.HistoryRepository
@@ -38,4 +42,13 @@ class AppContainer(context: Context) {
 
   val searchUseCase by lazy { SearchUseCase(searchRepository) }
   val getAltSourcesUseCase by lazy { GetAltSourcesUseCase(altSourceRepository) }
+
+  fun startWarmup(scope: CoroutineScope) {
+    scope.launch(Dispatchers.IO) {
+      val bundle = apiSourcesProvider.load()
+      val mobileApis = bundle.parseApis.filter { it.mobile }
+      val apis = if (mobileApis.isNotEmpty()) mobileApis else bundle.parseApis
+      WarmupManager.start(scope, parserApiClient, apis)
+    }
+  }
 }

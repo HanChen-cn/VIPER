@@ -154,11 +154,11 @@ fun AppNavGraph(appContainer: AppContainer) {
           vm.bindSession(PlaybackSessionStore.session)
         }
         PlayerScreen(
-          session = vm.state.session,
-          extraSources = vm.state.extraSources,
-          loadingExtraSources = vm.state.loadingExtraSources,
-          error = vm.state.error,
-          onBack = { navController.popBackStack() }
+          uiState = vm.state,
+          onBack = { navController.popBackStack() },
+          onSwitchEpisode = vm::switchEpisode,
+          onNextEpisode = vm::nextEpisode,
+          onToggleFullscreen = vm::toggleFullscreen
         )
       }
     }

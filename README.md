@@ -2,7 +2,7 @@
 
 Chrome/Edge 浏览器扩展 — 输入电视剧/动漫名称，自动搜索全网可播放资源，一键播放。
 
-仓库同时包含 `android-app/` 原生 Android 客户端（搜索、播放、历史、收藏）。
+仓库同时包含 `android-app/` 原生 Android 客户端（搜索、播放、历史、收藏），已对齐 Web 端核心能力：预热测速选最快可播源、下一集、剧集列表、换源。
 Android 版本支持 `android-v*` tag 自动构建，构建成功后会把 `APK` 同时上传到 `GitHub Release` 与 `Actions Artifacts`。
 
 妈妈再也不用充会员、到处找资源了。
@@ -67,3 +67,11 @@ player (新标签页播放器)      ←  从 session storage 读取播放数据
 - CMS 采集站标准 API（5 个资源站并发搜索）
 - 35 个内置解析接口，预热检测 + 智能排序
 - 浮动播放器：可拖拽、可缩放、可最小化，支持一键换源
+
+### Android 端
+
+- Kotlin + Jetpack Compose + Media3 ExoPlayer
+- 预热测速：App 启动时并发 HEAD 测速所有解析接口，按延迟排序，搜索和播放均使用最快接口
+- 播放页：竖屏 16:9 视口 + 沉浸式横屏全屏双模式
+- 播放页功能：下一集、剧集选择列表（FlowRow 网格）、换源（动态重搜 CMS 备源）
+- ExoPlayer 直接播放 `.m3u8` / `.mp4`；解析接口页面走 WebView

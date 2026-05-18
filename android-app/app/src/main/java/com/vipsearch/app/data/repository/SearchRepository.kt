@@ -7,6 +7,7 @@ import com.vipsearch.app.data.model.Show
 import com.vipsearch.app.data.remote.ApiSourcesProvider
 import com.vipsearch.app.data.remote.CmsApiClient
 import com.vipsearch.app.data.remote.ParserApiClient
+import com.vipsearch.app.data.remote.WarmupManager
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import kotlinx.coroutines.async
@@ -19,9 +20,7 @@ class SearchRepository(
   private val cmsApiClient: CmsApiClient,
   private val parserApiClient: ParserApiClient
 ) {
-  suspend fun search(keyword: String): List<Show> {
-    if (keyword.isBlank()) return emptyList()
-
+  private suspend fun searchAndMerge(keyword: String): List<Show> {
     val bundle = apiSourcesProvider.load()
     val enabledSources = bundle.cmsSources.filter { it.enabled }
     if (enabledSources.isEmpty()) return emptyList()
@@ -33,16 +32,28 @@ class SearchRepository(
     }.filter { it.isNotEmpty() }
 
     if (sourceResults.isEmpty()) return emptyList()
+    return mergeAndDedupe(sourceResults)
+  }
 
+  suspend fun search(keyword: String): List<Show> {
+    if (keyword.isBlank()) return emptyList()
+
+    val bundle = apiSourcesProvider.load()
+    val merged = searchAndMerge(keyword)
+    if (merged.isEmpty()) return emptyList()
+
+    val warmupApis = WarmupManager.awaitResult()
     val mobileApis = bundle.parseApis.filter { it.mobile }
-    val availableApis = if (mobileApis.isNotEmpty()) mobileApis else bundle.parseApis
-    val bestApi = availableApis.firstOrNull()
+    val fallbackApis = if (mobileApis.isNotEmpty()) mobileApis else bundle.parseApis
 
-    return mergeAndDedupe(sourceResults).map { show ->
+    val rankedApis = if (warmupApis.isNotEmpty()) warmupApis.map { it.api } else fallbackApis
+    val bestApi = rankedApis.firstOrNull()
+
+    return merged.map { show ->
       show.copy(
         episodes = show.episodes.map { ep ->
           val encoded = urlEncode(ep.playUrl)
-          val alt = availableApis.take(8).map { api -> "${api.url}$encoded" }
+          val alt = rankedApis.take(8).map { api -> "${api.url}$encoded" }
           if (needsParsing(ep.playUrl) && bestApi != null) {
             ep.copy(playUrl = parserApiClient.buildParseUrl(bestApi, encoded), altUrls = alt)
           } else {
@@ -59,20 +70,10 @@ class SearchRepository(
     currentUrl: String
   ): List<String> {
     if (showName.isBlank() || episodeName.isBlank()) return emptyList()
-    val bundle = apiSourcesProvider.load()
-    val enabledSources = bundle.cmsSources.filter { it.enabled }
-    if (enabledSources.isEmpty()) return emptyList()
 
-    val sourceResults = coroutineScope {
-      enabledSources.map { source ->
-        async { fetchSourceShows(source, showName) }
-      }.awaitAll()
-    }.filter { it.isNotEmpty() }
-
-    if (sourceResults.isEmpty()) return emptyList()
-
-    val targetShow = mergeAndDedupe(sourceResults)
-      .firstOrNull { it.name.trim() == showName.trim() } ?: return emptyList()
+    val merged = searchAndMerge(showName)
+    val targetShow = merged.firstOrNull { it.name.trim() == showName.trim() }
+      ?: return emptyList()
 
     val seen = linkedSetOf<String>()
     targetShow.episodes.forEach { ep ->
@@ -82,6 +83,30 @@ class SearchRepository(
     }
     return seen.toList()
   }
+
+  suspend fun getEpisodeList(showName: String): List<Episode> {
+    if (showName.isBlank()) return emptyList()
+
+    val merged = searchAndMerge(showName)
+    val show = merged.firstOrNull { it.name.trim() == showName.trim() }
+      ?: return emptyList()
+
+    val warmupApis = WarmupManager.awaitResult()
+    val bundle = apiSourcesProvider.load()
+    val mobileApis = bundle.parseApis.filter { it.mobile }
+    val fallbackApis = if (mobileApis.isNotEmpty()) mobileApis else bundle.parseApis
+    val bestApi = if (warmupApis.isNotEmpty()) warmupApis.first().api else fallbackApis.firstOrNull()
+
+    return deduplicateEpisodes(show.episodes).map { ep ->
+      if (needsParsing(ep.playUrl) && bestApi != null) {
+        ep.copy(playUrl = parserApiClient.buildParseUrl(bestApi, urlEncode(ep.playUrl)))
+      } else ep
+    }
+  }
+
+  private fun deduplicateEpisodes(episodes: List<Episode>): List<Episode> =
+    episodes.groupBy { it.name.trim() }
+      .mapNotNull { (_, list) -> list.firstOrNull() }
 
   private suspend fun fetchSourceShows(source: ApiSource, keyword: String): List<Show> {
     val raw = cmsApiClient.searchRaw(source, keyword) ?: return emptyList()
