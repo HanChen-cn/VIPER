@@ -37,6 +37,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Button
@@ -54,6 +55,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -92,15 +94,19 @@ fun PlayerScreen(
   val showSourceList = remember { mutableStateOf(false) }
   val isVideoLoading = remember { mutableStateOf(true) }
   val isVideoFullscreen = remember { mutableStateOf(false) }
-  val fullscreenView = remember { mutableStateOf<View?>(null) }
-  val fullscreenCallback = remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
 
   val context = LocalContext.current
   val activity = context as? Activity
 
-  fun enterFullscreen(view: View, callback: WebChromeClient.CustomViewCallback) {
-    fullscreenView.value = view
-    fullscreenCallback.value = callback
+  // Hoist ExoPlayer — created once per URL, survives fullscreen toggle
+  val exoPlayer = remember { mutableStateOf<ExoPlayer?>(null) }
+  val exoPlayerUrl = remember { mutableStateOf("") }
+
+  // Hoist WebView — created once, survives fullscreen toggle
+  val hoistedWebView = remember { mutableStateOf<WebView?>(null) }
+  val hoistedWebViewUrl = remember { mutableStateOf("") }
+
+  fun enterFullscreen() {
     isVideoFullscreen.value = true
     activity?.let {
       it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
@@ -115,9 +121,6 @@ fun PlayerScreen(
   }
 
   fun exitFullscreen() {
-    fullscreenCallback.value?.onCustomViewHidden()
-    fullscreenView.value = null
-    fullscreenCallback.value = null
     isVideoFullscreen.value = false
     activity?.let {
       it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -153,111 +156,114 @@ fun PlayerScreen(
     }
   }
 
+  // Manage ExoPlayer lifecycle — create/release when URL changes
+  DisposableEffect(target.value) {
+    val playbackTarget = target.value
+    if (playbackTarget is PlaybackTarget.Exo) {
+      val url = playbackTarget.mediaUrl
+      if (exoPlayerUrl.value != url) {
+        exoPlayer.value?.release()
+        val player = ExoPlayer.Builder(context).build().apply {
+          setMediaItem(MediaItem.fromUri(url))
+          seekTo(playbackPositions[url] ?: 0L)
+          prepare()
+          playWhenReady = true
+        }
+        exoPlayer.value = player
+        exoPlayerUrl.value = url
+      }
+    } else {
+      exoPlayer.value?.release()
+      exoPlayer.value = null
+      exoPlayerUrl.value = ""
+    }
+    onDispose { }
+  }
+
+  // Save position and release ExoPlayer on final dispose
   DisposableEffect(Unit) {
     onDispose {
+      exoPlayer.value?.let {
+        playbackPositions[exoPlayerUrl.value] = it.currentPosition
+        it.release()
+      }
+      exoPlayer.value = null
+      hoistedWebView.value?.destroy()
+      hoistedWebView.value = null
       if (isVideoFullscreen.value) exitFullscreen()
     }
   }
 
   if (isVideoFullscreen.value) {
     BackHandler { exitFullscreen() }
-
-    val customView = fullscreenView.value
-    if (customView != null) {
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-          .background(Color.Black)
-      ) {
-        AndroidView(
-          modifier = Modifier.fillMaxSize(),
-          factory = {
-            FrameLayout(it).apply {
-              addView(
-                customView,
-                FrameLayout.LayoutParams(
-                  ViewGroup.LayoutParams.MATCH_PARENT,
-                  ViewGroup.LayoutParams.MATCH_PARENT
-                )
-              )
-            }
-          },
-          update = {}
-        )
-      }
-    } else {
-      Box(
-        modifier = Modifier
-          .fillMaxSize()
-          .background(Color.Black)
-      ) {
-        when (val playbackTarget = target.value) {
-          is PlaybackTarget.Exo -> ExoPlayerPane(
-            url = playbackTarget.mediaUrl,
-            startPositionMs = playbackPositions[playbackTarget.mediaUrl] ?: 0L,
-            onSavePosition = { pos -> playbackPositions[playbackTarget.mediaUrl] = pos },
-            onPlaybackError = { errorMsg -> autoFallback(errorMsg) }
-          )
-          is PlaybackTarget.Web -> WebViewPane(
-            url = playbackTarget.pageUrl,
-            onWebError = { errorMsg -> autoFallback(errorMsg) },
-            onShowCustomView = ::enterFullscreen,
-            onHideCustomView = { exitFullscreen() }
-          )
-          null -> {}
-        }
-      }
-    }
-    return
   }
 
-  // --- 竖屏模式 ---
   Column(modifier = Modifier.fillMaxSize()) {
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .background(MaterialTheme.colorScheme.surface)
-        .padding(horizontal = 8.dp, vertical = 4.dp),
-      verticalAlignment = Alignment.CenterVertically
-    ) {
-      IconButton(onClick = onBack) {
-        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+    // Top bar — hidden in fullscreen
+    if (!isVideoFullscreen.value) {
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .background(MaterialTheme.colorScheme.surface)
+          .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        IconButton(onClick = onBack) {
+          Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+        }
+        Text(
+          text = "${session.showName} · ${session.episodeName}",
+          style = MaterialTheme.typography.titleMedium,
+          modifier = Modifier.weight(1f),
+          maxLines = 1
+        )
       }
-      Text(
-        text = "${session.showName} · ${session.episodeName}",
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.weight(1f),
-        maxLines = 1
-      )
     }
 
+    // Video container — aspectRatio in portrait, fillMaxSize in fullscreen
     Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .aspectRatio(16f / 9f)
-        .background(Color.Black)
+      modifier = if (isVideoFullscreen.value) {
+        Modifier
+          .fillMaxWidth()
+          .weight(1f)
+          .background(Color.Black)
+      } else {
+        Modifier
+          .fillMaxWidth()
+          .aspectRatio(16f / 9f)
+          .background(Color.Black)
+      }
     ) {
       when (val playbackTarget = target.value) {
-        is PlaybackTarget.Exo -> ExoPlayerPane(
-          url = playbackTarget.mediaUrl,
-          startPositionMs = playbackPositions[playbackTarget.mediaUrl] ?: 0L,
-          onSavePosition = { pos -> playbackPositions[playbackTarget.mediaUrl] = pos },
-          onPlaybackError = { errorMsg -> autoFallback(errorMsg) },
-          onPlaybackReady = { isVideoLoading.value = false }
-        )
-        is PlaybackTarget.Web -> WebViewPane(
-          url = playbackTarget.pageUrl,
-          onWebError = { errorMsg -> autoFallback(errorMsg) },
-          onShowCustomView = ::enterFullscreen,
-          onHideCustomView = { exitFullscreen() },
-          onPageLoaded = { isVideoLoading.value = false }
-        )
-        null -> Box(
-          modifier = Modifier.fillMaxSize(),
-          contentAlignment = Alignment.Center
-        ) {
-          isVideoLoading.value = false
-          Text("请先从搜索页选择剧集", color = Color.White)
+        is PlaybackTarget.Exo -> {
+          val player = exoPlayer.value
+          if (player != null) {
+            HoistedExoPlayerView(
+              exoPlayer = player,
+              onPlaybackReady = { isVideoLoading.value = false },
+              onPlaybackError = { errorMsg -> autoFallback(errorMsg) }
+            )
+          }
+        }
+        is PlaybackTarget.Web -> {
+          HoistedWebView(
+            url = playbackTarget.pageUrl,
+            hoistedWebView = hoistedWebView,
+            hoistedWebViewUrl = hoistedWebViewUrl,
+            onWebError = { errorMsg -> autoFallback(errorMsg) },
+            onPageLoaded = { isVideoLoading.value = false }
+          )
+        }
+        null -> {
+          if (!isVideoFullscreen.value) {
+            Box(
+              modifier = Modifier.fillMaxSize(),
+              contentAlignment = Alignment.Center
+            ) {
+              isVideoLoading.value = false
+              Text("请先从搜索页选择剧集", color = Color.White)
+            }
+          }
         }
       }
 
@@ -274,19 +280,10 @@ fun PlayerScreen(
         }
       }
 
+      // Fullscreen toggle button — always visible on the video
       IconButton(
         onClick = {
-          isVideoFullscreen.value = true
-          activity?.let {
-            it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            val window = it.window
-            WindowCompat.setDecorFitsSystemWindows(window, false)
-            WindowInsetsControllerCompat(window, window.decorView).let { ctrl ->
-              ctrl.hide(WindowInsetsCompat.Type.systemBars())
-              ctrl.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-          }
+          if (isVideoFullscreen.value) exitFullscreen() else enterFullscreen()
         },
         modifier = Modifier
           .align(Alignment.TopEnd)
@@ -294,208 +291,193 @@ fun PlayerScreen(
           .size(40.dp)
       ) {
         Icon(
-          Icons.Default.Fullscreen,
-          contentDescription = "全屏",
+          if (isVideoFullscreen.value) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+          contentDescription = if (isVideoFullscreen.value) "退出全屏" else "全屏",
           tint = Color.White.copy(alpha = 0.85f),
           modifier = Modifier.size(28.dp)
         )
       }
     }
 
-    Row(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 12.dp, vertical = 8.dp),
-      horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-      if (uiState.hasNextEpisode) {
-        Button(
-          onClick = onNextEpisode,
-          modifier = Modifier.weight(1f)
-        ) {
-          Icon(Icons.Default.SkipNext, contentDescription = null)
-          Spacer(modifier = Modifier.width(4.dp))
-          Text("下一集")
-        }
-      }
-
-      FilledTonalButton(
-        onClick = {
-          val expanding = !showSourceList.value
-          showSourceList.value = expanding
-          if (expanding) onRequestExtraSources()
-        },
-        modifier = Modifier.weight(1f)
-      ) {
-        Text(if (showSourceList.value) "收起换源 ▲" else "换源 ▼")
-      }
-
-      OutlinedButton(
-        onClick = {
-          val url = currentUrl.value
-          if (url.isNotBlank()) {
-            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            clipboard.setPrimaryClip(ClipData.newPlainText("播放链接", url))
-            statusHint.value = "链接已复制"
-          }
-        }
-      ) {
-        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-        Spacer(modifier = Modifier.width(4.dp))
-        Text("复制")
-      }
-    }
-
-    if (statusHint.value.isNotBlank()) {
-      Text(
-        text = statusHint.value,
-        color = MaterialTheme.colorScheme.error,
-        style = MaterialTheme.typography.bodySmall,
-        modifier = Modifier.padding(horizontal = 12.dp)
-      )
-    }
-    if (uiState.error.isNotBlank()) {
-      Text(
-        text = uiState.error,
-        color = MaterialTheme.colorScheme.error,
-        style = MaterialTheme.typography.bodySmall,
-        modifier = Modifier.padding(horizontal = 12.dp)
-      )
-    }
-
-    if (showSourceList.value) {
-      Column(
+    // Bottom controls — hidden in fullscreen
+    if (!isVideoFullscreen.value) {
+      Row(
         modifier = Modifier
           .fillMaxWidth()
-          .padding(horizontal = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+          .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
       ) {
-        Text(
-          "可用源：",
-          style = MaterialTheme.typography.labelMedium,
-          modifier = Modifier.padding(bottom = 4.dp)
-        )
-        if (uiState.loadingExtraSources) {
-          Text("搜索其他源中...", style = MaterialTheme.typography.bodySmall)
-        }
-        switchController.all().forEachIndexed { index, sourceUrl ->
-          val selected = sourceUrl == currentUrl.value
-          if (selected) {
-            Button(
-              onClick = {},
-              modifier = Modifier.fillMaxWidth(),
-              colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
-              )
-            ) {
-              Text("当前源 ${index + 1}")
-            }
-          } else {
-            OutlinedButton(
-              onClick = {
-                val switched = switchController.switchTo(index)
-                if (!switched.isNullOrBlank()) {
-                  moveTo(switched)
-                  statusHint.value = ""
-                }
-              },
-              modifier = Modifier.fillMaxWidth()
-            ) {
-              Text("源 ${index + 1}")
-            }
+        if (uiState.hasNextEpisode) {
+          Button(
+            onClick = onNextEpisode,
+            modifier = Modifier.weight(1f)
+          ) {
+            Icon(Icons.Default.SkipNext, contentDescription = null)
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("下一集")
           }
         }
-      }
-    }
 
-    Column(
-      modifier = Modifier
-        .fillMaxWidth()
-        .weight(1f)
-        .verticalScroll(rememberScrollState())
-        .padding(12.dp)
-    ) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Text("剧集列表", style = MaterialTheme.typography.titleSmall)
-        if (uiState.loadingEpisodes) {
-          Text("加载中...", style = MaterialTheme.typography.bodySmall)
+        FilledTonalButton(
+          onClick = {
+            val expanding = !showSourceList.value
+            showSourceList.value = expanding
+            if (expanding) onRequestExtraSources()
+          },
+          modifier = Modifier.weight(1f)
+        ) {
+          Text(if (showSourceList.value) "收起换源 ▲" else "换源 ▼")
+        }
+
+        OutlinedButton(
+          onClick = {
+            val url = currentUrl.value
+            if (url.isNotBlank()) {
+              val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+              clipboard.setPrimaryClip(ClipData.newPlainText("播放链接", url))
+              statusHint.value = "链接已复制"
+            }
+          }
+        ) {
+          Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+          Spacer(modifier = Modifier.width(4.dp))
+          Text("复制")
         }
       }
-      Spacer(modifier = Modifier.height(8.dp))
 
-      if (uiState.episodes.isNotEmpty()) {
-        FlowRow(
-          horizontalArrangement = Arrangement.spacedBy(6.dp),
-          verticalArrangement = Arrangement.spacedBy(6.dp),
-          modifier = Modifier.fillMaxWidth()
+      if (statusHint.value.isNotBlank()) {
+        Text(
+          text = statusHint.value,
+          color = MaterialTheme.colorScheme.error,
+          style = MaterialTheme.typography.bodySmall,
+          modifier = Modifier.padding(horizontal = 12.dp)
+        )
+      }
+      if (uiState.error.isNotBlank()) {
+        Text(
+          text = uiState.error,
+          color = MaterialTheme.colorScheme.error,
+          style = MaterialTheme.typography.bodySmall,
+          modifier = Modifier.padding(horizontal = 12.dp)
+        )
+      }
+
+      if (showSourceList.value) {
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+          verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-          uiState.episodes.forEachIndexed { index, ep ->
-            val isCurrent = index == uiState.currentEpisodeIndex
-            if (isCurrent) {
+          Text(
+            "可用源：",
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(bottom = 4.dp)
+          )
+          if (uiState.loadingExtraSources) {
+            Text("搜索其他源中...", style = MaterialTheme.typography.bodySmall)
+          }
+          switchController.all().forEachIndexed { index, sourceUrl ->
+            val selected = sourceUrl == currentUrl.value
+            if (selected) {
               Button(
                 onClick = {},
+                modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                   containerColor = MaterialTheme.colorScheme.primary
                 )
               ) {
-                Text(ep.name)
+                Text("当前源 ${index + 1}")
               }
             } else {
-              OutlinedButton(onClick = { onSwitchEpisode(index) }) {
-                Text(ep.name)
+              OutlinedButton(
+                onClick = {
+                  val switched = switchController.switchTo(index)
+                  if (!switched.isNullOrBlank()) {
+                    moveTo(switched)
+                    statusHint.value = ""
+                  }
+                },
+                modifier = Modifier.fillMaxWidth()
+              ) {
+                Text("源 ${index + 1}")
               }
             }
           }
         }
-      } else if (!uiState.loadingEpisodes) {
-        Text("暂无剧集信息", style = MaterialTheme.typography.bodySmall)
+      }
+
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .weight(1f)
+          .verticalScroll(rememberScrollState())
+          .padding(12.dp)
+      ) {
+        Row(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text("剧集列表", style = MaterialTheme.typography.titleSmall)
+          if (uiState.loadingEpisodes) {
+            Text("加载中...", style = MaterialTheme.typography.bodySmall)
+          }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (uiState.episodes.isNotEmpty()) {
+          FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            uiState.episodes.forEachIndexed { index, ep ->
+              val isCurrent = index == uiState.currentEpisodeIndex
+              if (isCurrent) {
+                Button(
+                  onClick = {},
+                  colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                  )
+                ) {
+                  Text(ep.name)
+                }
+              } else {
+                OutlinedButton(onClick = { onSwitchEpisode(index) }) {
+                  Text(ep.name)
+                }
+              }
+            }
+          }
+        } else if (!uiState.loadingEpisodes) {
+          Text("暂无剧集信息", style = MaterialTheme.typography.bodySmall)
+        }
       }
     }
   }
 }
 
 @Composable
-private fun ExoPlayerPane(
-  url: String,
-  startPositionMs: Long,
-  onSavePosition: (Long) -> Unit,
-  onPlaybackError: (String) -> Unit,
-  onPlaybackReady: (() -> Unit)? = null
+private fun HoistedExoPlayerView(
+  exoPlayer: ExoPlayer,
+  onPlaybackReady: () -> Unit,
+  onPlaybackError: (String) -> Unit
 ) {
-  val context = LocalContext.current
-  val exoPlayer = remember(url) {
-    ExoPlayer.Builder(context).build().apply {
-      setMediaItem(MediaItem.fromUri(url))
-      seekTo(startPositionMs)
-      prepare()
-      playWhenReady = true
-    }
-  }
+  val currentOnReady = rememberUpdatedState(onPlaybackReady)
+  val currentOnError = rememberUpdatedState(onPlaybackError)
 
   DisposableEffect(exoPlayer) {
     val listener = object : Player.Listener {
       override fun onPlaybackStateChanged(playbackState: Int) {
-        if (playbackState == Player.STATE_READY) onPlaybackReady?.invoke()
+        if (playbackState == Player.STATE_READY) currentOnReady.value.invoke()
       }
       override fun onPlayerError(error: PlaybackException) {
-        onPlaybackError(error.message ?: "播放器错误")
+        currentOnError.value.invoke(error.message ?: "播放器错误")
       }
     }
     exoPlayer.addListener(listener)
-    onDispose {
-      exoPlayer.removeListener(listener)
-    }
-  }
-
-  DisposableEffect(exoPlayer) {
-    onDispose {
-      onSavePosition(exoPlayer.currentPosition)
-      exoPlayer.release()
-    }
+    onDispose { exoPlayer.removeListener(listener) }
   }
 
   AndroidView(
@@ -514,15 +496,16 @@ private fun ExoPlayerPane(
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun WebViewPane(
+private fun HoistedWebView(
   url: String,
+  hoistedWebView: androidx.compose.runtime.MutableState<WebView?>,
+  hoistedWebViewUrl: androidx.compose.runtime.MutableState<String>,
   onWebError: (String) -> Unit,
-  onShowCustomView: ((View, WebChromeClient.CustomViewCallback) -> Unit)? = null,
-  onHideCustomView: (() -> Unit)? = null,
-  onPageLoaded: (() -> Unit)? = null
+  onPageLoaded: () -> Unit
 ) {
-  val cookieManager = CookieManager.getInstance()
-  cookieManager.setAcceptCookie(true)
+  val context = LocalContext.current
+  val currentOnError = rememberUpdatedState(onWebError)
+  val currentOnPageLoaded = rememberUpdatedState(onPageLoaded)
 
   val fullscreenCss = """
     javascript:(function(){
@@ -532,10 +515,22 @@ private fun WebViewPane(
     })()
   """.trimIndent()
 
-  AndroidView(
-    modifier = Modifier.fillMaxSize(),
-    factory = { ctx ->
-      WebView(ctx).apply {
+  // Create WebView once
+  DisposableEffect(url) {
+    val existing = hoistedWebView.value
+    if (existing != null && hoistedWebViewUrl.value == url) {
+      // WebView already exists for this URL, just reload if needed
+      if (existing.url != url) {
+        existing.loadUrl(url)
+      }
+    } else {
+      // Destroy old WebView if URL changed
+      existing?.destroy()
+
+      val cookieManager = CookieManager.getInstance()
+      cookieManager.setAcceptCookie(true)
+
+      val webView = WebView(context).apply {
         cookieManager.setAcceptThirdPartyCookies(this, true)
         setBackgroundColor(android.graphics.Color.BLACK)
         settings.javaScriptEnabled = true
@@ -549,37 +544,45 @@ private fun WebViewPane(
           .replace("; ${android.os.Build.MODEL}", "")
         webChromeClient = object : WebChromeClient() {
           override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
-            if (view != null && callback != null) {
-              onShowCustomView?.invoke(view, callback)
-            }
+            // Not used in this simplified flow
           }
           override fun onHideCustomView() {
-            onHideCustomView?.invoke()
+            // Not used in this simplified flow
           }
         }
         webViewClient = object : WebViewClient() {
           override fun onPageFinished(view: WebView?, pageUrl: String?) {
             view?.evaluateJavascript(fullscreenCss, null)
-            onPageLoaded?.invoke()
+            currentOnPageLoaded.value.invoke()
           }
-
           override fun onReceivedError(
             view: WebView?,
             request: WebResourceRequest?,
             error: WebResourceError?
           ) {
             if (request?.isForMainFrame == true) {
-              onWebError(error?.description?.toString() ?: "WebView 加载失败")
+              currentOnError.value.invoke(error?.description?.toString() ?: "WebView 加载失败")
             }
           }
         }
         loadUrl(url)
       }
-    },
-    update = { webView ->
-      if (webView.url != url) {
-        webView.loadUrl(url)
-      }
+      hoistedWebView.value = webView
+      hoistedWebViewUrl.value = url
     }
-  )
+    onDispose { }
+  }
+
+  val webView = hoistedWebView.value
+  if (webView != null) {
+    AndroidView(
+      modifier = Modifier.fillMaxSize(),
+      factory = { webView },
+      update = { view ->
+        if (view.url != url) {
+          view.loadUrl(url)
+        }
+      }
+    )
+  }
 }
