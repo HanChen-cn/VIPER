@@ -1,0 +1,71 @@
+package com.vipsearch.app.ui.viewmodel
+
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.vipsearch.app.data.repository.SearchRepository
+import com.vipsearch.app.domain.usecase.GetAltSourcesUseCase
+import com.vipsearch.app.ui.state.PlaybackSession
+import kotlinx.coroutines.launch
+
+data class PlayerUiState(
+  val session: PlaybackSession = PlaybackSession(),
+  val loadingExtraSources: Boolean = false,
+  val extraSources: List<String> = emptyList(),
+  val error: String = ""
+)
+
+class PlayerViewModel(
+  private val getAltSourcesUseCase: GetAltSourcesUseCase,
+  private val searchRepository: SearchRepository
+) : ViewModel() {
+  var state by mutableStateOf(PlayerUiState())
+    private set
+
+  fun bindSession(session: PlaybackSession) {
+    state = state.copy(session = session, error = "")
+    if (session.primaryUrl.isBlank() || session.showName.isBlank() || session.episodeName.isBlank()) {
+      return
+    }
+    viewModelScope.launch {
+      state = state.copy(loadingExtraSources = true)
+      val result = runCatching {
+        getAltSourcesUseCase(
+          showName = session.showName,
+          episodeName = session.episodeName,
+          primaryUrl = session.primaryUrl
+        ) {
+          searchRepository.getAltSources(
+            showName = session.showName,
+            episodeName = session.episodeName,
+            currentUrl = session.primaryUrl
+          )
+        }
+      }
+      state = result.fold(
+        onSuccess = { extra ->
+          state.copy(loadingExtraSources = false, extraSources = extra, error = "")
+        },
+        onFailure = {
+          state.copy(loadingExtraSources = false, extraSources = emptyList(), error = it.message ?: "备源加载失败")
+        }
+      )
+    }
+  }
+}
+
+class PlayerViewModelFactory(
+  private val getAltSourcesUseCase: GetAltSourcesUseCase,
+  private val searchRepository: SearchRepository
+) : ViewModelProvider.Factory {
+  override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    if (modelClass.isAssignableFrom(PlayerViewModel::class.java)) {
+      @Suppress("UNCHECKED_CAST")
+      return PlayerViewModel(getAltSourcesUseCase, searchRepository) as T
+    }
+    throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+  }
+}
