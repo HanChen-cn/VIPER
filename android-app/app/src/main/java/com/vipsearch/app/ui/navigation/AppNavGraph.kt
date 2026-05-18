@@ -8,6 +8,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -15,7 +18,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.vipsearch.app.AppContainer
+import com.vipsearch.app.BuildConfig
+import com.vipsearch.app.data.remote.AppUpdate
+import com.vipsearch.app.data.remote.UpdateChecker
+import com.vipsearch.app.ui.components.UpdateDialog
+import kotlinx.coroutines.launch
 import com.vipsearch.app.ui.screens.FavoritesScreen
 import com.vipsearch.app.ui.screens.HistoryScreen
 import com.vipsearch.app.ui.screens.PlayerScreen
@@ -35,6 +44,23 @@ private data class BottomTab(val route: String, val title: String)
 @Composable
 fun AppNavGraph(appContainer: AppContainer) {
   val navController = rememberNavController()
+  val scope = rememberCoroutineScope()
+  val pendingUpdate = remember { mutableStateOf<AppUpdate?>(null) }
+
+  LaunchedEffect(Unit) {
+    scope.launch {
+      val update = UpdateChecker().check(BuildConfig.VERSION_NAME)
+      if (update != null) pendingUpdate.value = update
+    }
+  }
+
+  pendingUpdate.value?.let { update ->
+    UpdateDialog(
+      update = update,
+      onDismiss = { pendingUpdate.value = null }
+    )
+  }
+
   val tabs = listOf(
     BottomTab(route = "search", title = "搜索"),
     BottomTab(route = "history", title = "历史"),
