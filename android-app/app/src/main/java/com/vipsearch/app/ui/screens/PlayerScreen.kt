@@ -3,11 +3,14 @@ package com.vipsearch.app.ui.screens
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.ActivityInfo
+import android.view.View
+import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,8 +30,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -61,7 +62,6 @@ import androidx.media3.ui.PlayerView
 import com.vipsearch.app.player.PlayerCoordinator
 import com.vipsearch.app.player.PlaybackTarget
 import com.vipsearch.app.player.SourceSwitchController
-import com.vipsearch.app.ui.state.PlaybackSession
 import com.vipsearch.app.ui.viewmodel.PlayerUiState
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -81,6 +81,42 @@ fun PlayerScreen(
   val statusHint = remember { mutableStateOf("") }
   val playbackPositions = remember { mutableStateMapOf<String, Long>() }
   val showSourceList = remember { mutableStateOf(false) }
+  val isVideoFullscreen = remember { mutableStateOf(false) }
+  val fullscreenView = remember { mutableStateOf<View?>(null) }
+  val fullscreenCallback = remember { mutableStateOf<WebChromeClient.CustomViewCallback?>(null) }
+
+  val context = LocalContext.current
+  val activity = context as? Activity
+
+  fun enterFullscreen(view: View, callback: WebChromeClient.CustomViewCallback) {
+    fullscreenView.value = view
+    fullscreenCallback.value = callback
+    isVideoFullscreen.value = true
+    activity?.let {
+      it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+      val window = it.window
+      WindowCompat.setDecorFitsSystemWindows(window, false)
+      WindowInsetsControllerCompat(window, window.decorView).let { ctrl ->
+        ctrl.hide(WindowInsetsCompat.Type.systemBars())
+        ctrl.systemBarsBehavior =
+          WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+      }
+    }
+  }
+
+  fun exitFullscreen() {
+    fullscreenCallback.value?.onCustomViewHidden()
+    fullscreenView.value = null
+    fullscreenCallback.value = null
+    isVideoFullscreen.value = false
+    activity?.let {
+      it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+      val window = it.window
+      WindowCompat.setDecorFitsSystemWindows(window, true)
+      WindowInsetsControllerCompat(window, window.decorView)
+        .show(WindowInsetsCompat.Type.systemBars())
+    }
+  }
 
   fun moveTo(url: String) {
     currentUrl.value = url
@@ -106,47 +142,37 @@ fun PlayerScreen(
     }
   }
 
-  val context = LocalContext.current
-  val activity = context as? Activity
+  DisposableEffect(Unit) {
+    onDispose {
+      if (isVideoFullscreen.value) exitFullscreen()
+    }
+  }
 
-  if (uiState.isFullscreen) {
-    BackHandler { onToggleFullscreen() }
-
-    LaunchedEffect(Unit) {
-      activity?.let {
-        it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        val window = it.window
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        WindowInsetsControllerCompat(window, window.decorView).let { ctrl ->
-          ctrl.hide(WindowInsetsCompat.Type.systemBars())
-          ctrl.systemBarsBehavior =
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
+  if (isVideoFullscreen.value) {
+    BackHandler { exitFullscreen() }
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .background(Color.Black)
+    ) {
+      fullscreenView.value?.let { view ->
+        AndroidView(
+          modifier = Modifier.fillMaxSize(),
+          factory = {
+            FrameLayout(it).apply {
+              addView(
+                view,
+                FrameLayout.LayoutParams(
+                  ViewGroup.LayoutParams.MATCH_PARENT,
+                  ViewGroup.LayoutParams.MATCH_PARENT
+                )
+              )
+            }
+          },
+          update = {}
+        )
       }
     }
-
-    DisposableEffect(Unit) {
-      onDispose {
-        activity?.let {
-          it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-          val window = it.window
-          WindowCompat.setDecorFitsSystemWindows(window, true)
-          WindowInsetsControllerCompat(window, window.decorView)
-            .show(WindowInsetsCompat.Type.systemBars())
-        }
-      }
-    }
-
-    FullscreenPlayer(
-      target = target.value,
-      playbackPositions = playbackPositions,
-      session = session,
-      hasNextEpisode = uiState.hasNextEpisode,
-      onPlaybackError = ::autoFallback,
-      onSavePosition = { url, pos -> playbackPositions[url] = pos },
-      onNextEpisode = onNextEpisode,
-      onExitFullscreen = onToggleFullscreen
-    )
     return
   }
 
@@ -168,9 +194,6 @@ fun PlayerScreen(
         modifier = Modifier.weight(1f),
         maxLines = 1
       )
-      IconButton(onClick = onToggleFullscreen) {
-        Icon(Icons.Default.Fullscreen, contentDescription = "全屏")
-      }
     }
 
     Box(
@@ -188,7 +211,9 @@ fun PlayerScreen(
         )
         is PlaybackTarget.Web -> WebViewPane(
           url = playbackTarget.pageUrl,
-          onWebError = { errorMsg -> autoFallback(errorMsg) }
+          onWebError = { errorMsg -> autoFallback(errorMsg) },
+          onShowCustomView = ::enterFullscreen,
+          onHideCustomView = { exitFullscreen() }
         )
         null -> Box(
           modifier = Modifier.fillMaxSize(),
@@ -337,68 +362,6 @@ fun PlayerScreen(
 }
 
 @Composable
-private fun FullscreenPlayer(
-  target: PlaybackTarget?,
-  playbackPositions: Map<String, Long>,
-  session: PlaybackSession,
-  hasNextEpisode: Boolean,
-  onPlaybackError: (String) -> Unit,
-  onSavePosition: (String, Long) -> Unit,
-  onNextEpisode: () -> Unit,
-  onExitFullscreen: () -> Unit
-) {
-  Box(
-    modifier = Modifier
-      .fillMaxSize()
-      .background(Color.Black)
-  ) {
-    when (val playbackTarget = target) {
-      is PlaybackTarget.Exo -> ExoPlayerPane(
-        url = playbackTarget.mediaUrl,
-        startPositionMs = playbackPositions[playbackTarget.mediaUrl] ?: 0L,
-        onSavePosition = { pos -> onSavePosition(playbackTarget.mediaUrl, pos) },
-        onPlaybackError = onPlaybackError
-      )
-      is PlaybackTarget.Web -> WebViewPane(
-        url = playbackTarget.pageUrl,
-        onWebError = onPlaybackError
-      )
-      null -> {}
-    }
-
-    Column(
-      modifier = Modifier
-        .align(Alignment.BottomEnd)
-        .padding(16.dp),
-      horizontalAlignment = Alignment.End,
-      verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-      if (hasNextEpisode) {
-        FilledTonalButton(onClick = onNextEpisode) {
-          Icon(Icons.Default.SkipNext, contentDescription = null)
-          Spacer(modifier = Modifier.width(4.dp))
-          Text("下一集")
-        }
-      }
-      FilledTonalButton(onClick = onExitFullscreen) {
-        Icon(Icons.Default.FullscreenExit, contentDescription = null)
-        Spacer(modifier = Modifier.width(4.dp))
-        Text("退出全屏")
-      }
-    }
-
-    Text(
-      text = "${session.showName} · ${session.episodeName}",
-      color = Color.White.copy(alpha = 0.8f),
-      style = MaterialTheme.typography.bodySmall,
-      modifier = Modifier
-        .align(Alignment.TopStart)
-        .padding(16.dp)
-    )
-  }
-}
-
-@Composable
 private fun ExoPlayerPane(
   url: String,
   startPositionMs: Long,
@@ -450,7 +413,12 @@ private fun ExoPlayerPane(
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-private fun WebViewPane(url: String, onWebError: (String) -> Unit) {
+private fun WebViewPane(
+  url: String,
+  onWebError: (String) -> Unit,
+  onShowCustomView: ((View, WebChromeClient.CustomViewCallback) -> Unit)? = null,
+  onHideCustomView: (() -> Unit)? = null
+) {
   val cookieManager = CookieManager.getInstance()
   cookieManager.setAcceptCookie(true)
 
@@ -477,7 +445,16 @@ private fun WebViewPane(url: String, onWebError: (String) -> Unit) {
         settings.userAgentString = settings.userAgentString
           .replace(Regex("\\s*wv\\b"), "")
           .replace("; ${android.os.Build.MODEL}", "")
-        webChromeClient = WebChromeClient()
+        webChromeClient = object : WebChromeClient() {
+          override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
+            if (view != null && callback != null) {
+              onShowCustomView?.invoke(view, callback)
+            }
+          }
+          override fun onHideCustomView() {
+            onHideCustomView?.invoke()
+          }
+        }
         webViewClient = object : WebViewClient() {
           override fun onPageFinished(view: WebView?, pageUrl: String?) {
             view?.evaluateJavascript(fullscreenCss, null)
