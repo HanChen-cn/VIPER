@@ -25,11 +25,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -150,18 +152,20 @@ fun PlayerScreen(
 
   if (isVideoFullscreen.value) {
     BackHandler { exitFullscreen() }
-    Box(
-      modifier = Modifier
-        .fillMaxSize()
-        .background(Color.Black)
-    ) {
-      fullscreenView.value?.let { view ->
+
+    val customView = fullscreenView.value
+    if (customView != null) {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .background(Color.Black)
+      ) {
         AndroidView(
           modifier = Modifier.fillMaxSize(),
           factory = {
             FrameLayout(it).apply {
               addView(
-                view,
+                customView,
                 FrameLayout.LayoutParams(
                   ViewGroup.LayoutParams.MATCH_PARENT,
                   ViewGroup.LayoutParams.MATCH_PARENT
@@ -171,6 +175,28 @@ fun PlayerScreen(
           },
           update = {}
         )
+      }
+    } else {
+      Box(
+        modifier = Modifier
+          .fillMaxSize()
+          .background(Color.Black)
+      ) {
+        when (val playbackTarget = target.value) {
+          is PlaybackTarget.Exo -> ExoPlayerPane(
+            url = playbackTarget.mediaUrl,
+            startPositionMs = playbackPositions[playbackTarget.mediaUrl] ?: 0L,
+            onSavePosition = { pos -> playbackPositions[playbackTarget.mediaUrl] = pos },
+            onPlaybackError = { errorMsg -> autoFallback(errorMsg) }
+          )
+          is PlaybackTarget.Web -> WebViewPane(
+            url = playbackTarget.pageUrl,
+            onWebError = { errorMsg -> autoFallback(errorMsg) },
+            onShowCustomView = ::enterFullscreen,
+            onHideCustomView = { exitFullscreen() }
+          )
+          null -> {}
+        }
       }
     }
     return
@@ -221,6 +247,32 @@ fun PlayerScreen(
         ) {
           Text("请先从搜索页选择剧集", color = Color.White)
         }
+      }
+
+      IconButton(
+        onClick = {
+          isVideoFullscreen.value = true
+          activity?.let {
+            it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            val window = it.window
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            WindowInsetsControllerCompat(window, window.decorView).let { ctrl ->
+              ctrl.hide(WindowInsetsCompat.Type.systemBars())
+              ctrl.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+          }
+        },
+        modifier = Modifier
+          .align(Alignment.BottomEnd)
+          .padding(4.dp)
+          .size(36.dp)
+      ) {
+        Icon(
+          Icons.Default.Fullscreen,
+          contentDescription = "全屏",
+          tint = Color.White.copy(alpha = 0.8f)
+        )
       }
     }
 
