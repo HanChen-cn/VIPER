@@ -36,8 +36,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Button
@@ -240,6 +238,8 @@ fun PlayerScreen(
           if (player != null) {
             HoistedExoPlayerView(
               exoPlayer = player,
+              onEnterFullscreen = ::enterFullscreen,
+              onExitFullscreen = ::exitFullscreen,
               onPlaybackReady = { isVideoLoading.value = false },
               onPlaybackError = { errorMsg -> autoFallback(errorMsg) }
             )
@@ -280,23 +280,6 @@ fun PlayerScreen(
         }
       }
 
-      // Fullscreen toggle button — always visible on the video
-      IconButton(
-        onClick = {
-          if (isVideoFullscreen.value) exitFullscreen() else enterFullscreen()
-        },
-        modifier = Modifier
-          .align(Alignment.TopEnd)
-          .padding(8.dp)
-          .size(40.dp)
-      ) {
-        Icon(
-          if (isVideoFullscreen.value) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-          contentDescription = if (isVideoFullscreen.value) "退出全屏" else "全屏",
-          tint = Color.White.copy(alpha = 0.85f),
-          modifier = Modifier.size(28.dp)
-        )
-      }
     }
 
     // Bottom controls — hidden in fullscreen
@@ -461,11 +444,15 @@ fun PlayerScreen(
 @Composable
 private fun HoistedExoPlayerView(
   exoPlayer: ExoPlayer,
+  onEnterFullscreen: () -> Unit,
+  onExitFullscreen: () -> Unit,
   onPlaybackReady: () -> Unit,
   onPlaybackError: (String) -> Unit
 ) {
   val currentOnReady = rememberUpdatedState(onPlaybackReady)
   val currentOnError = rememberUpdatedState(onPlaybackError)
+  val currentOnEnterFs = rememberUpdatedState(onEnterFullscreen)
+  val currentOnExitFs = rememberUpdatedState(onExitFullscreen)
 
   DisposableEffect(exoPlayer) {
     val listener = object : Player.Listener {
@@ -486,6 +473,12 @@ private fun HoistedExoPlayerView(
       PlayerView(ctx).apply {
         useController = true
         player = exoPlayer
+        controllerShowTimeoutMs = 3000
+        setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
+        setFullscreenButtonClickListener { isEnteringFs ->
+          if (isEnteringFs) currentOnEnterFs.value.invoke()
+          else currentOnExitFs.value.invoke()
+        }
       }
     },
     update = { view ->
@@ -510,7 +503,7 @@ private fun HoistedWebView(
   val fullscreenCss = """
     javascript:(function(){
       var s=document.createElement('style');
-      s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;background:#000!important}video,iframe,.player,.dplayer,.video-js,.art-video-player,[class*=player]{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;position:fixed!important;top:0!important;left:0!important;z-index:9999!important}header,footer,nav,.ad,.ads,.advertisement,[class*=header],[class*=footer],[class*=nav]{display:none!important}';
+      s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;background:#000!important}video,iframe,.player,.dplayer,.video-js,.art-video-player,[class*=player]{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;background:#000!important}header,footer,nav,.ad,.ads,.advertisement,[class*=header],[class*=footer],[class*=nav]{display:none!important}';
       document.head.appendChild(s);
     })()
   """.trimIndent()
