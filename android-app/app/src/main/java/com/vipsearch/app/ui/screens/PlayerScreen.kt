@@ -109,26 +109,30 @@ fun PlayerScreen(
 
   fun enterFullscreen() {
     isVideoFullscreen.value = true
-    activity?.let {
-      it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-      val window = it.window
-      WindowCompat.setDecorFitsSystemWindows(window, false)
-      WindowInsetsControllerCompat(window, window.decorView).let { ctrl ->
-        ctrl.hide(WindowInsetsCompat.Type.systemBars())
-        ctrl.systemBarsBehavior =
-          WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-      }
-    }
   }
 
   fun exitFullscreen() {
     isVideoFullscreen.value = false
-    activity?.let {
-      it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-      val window = it.window
-      WindowCompat.setDecorFitsSystemWindows(window, true)
-      WindowInsetsControllerCompat(window, window.decorView)
-        .show(WindowInsetsCompat.Type.systemBars())
+  }
+
+  LaunchedEffect(isVideoFullscreen.value) {
+    kotlinx.coroutines.delay(150)
+    activity?.let { act ->
+      val window = act.window
+      if (isVideoFullscreen.value) {
+        act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).let { ctrl ->
+          ctrl.hide(WindowInsetsCompat.Type.systemBars())
+          ctrl.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+      } else {
+        act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        WindowCompat.setDecorFitsSystemWindows(window, true)
+        WindowInsetsControllerCompat(window, window.decorView)
+          .show(WindowInsetsCompat.Type.systemBars())
+      }
     }
   }
 
@@ -198,7 +202,16 @@ fun PlayerScreen(
       exoPlayer.value = null
       hoistedWebView.value?.destroy()
       hoistedWebView.value = null
-      if (isVideoFullscreen.value) exitFullscreen()
+      if (isVideoFullscreen.value) {
+        isVideoFullscreen.value = false
+        activity?.let { act ->
+          act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+          val window = act.window
+          WindowCompat.setDecorFitsSystemWindows(window, true)
+          WindowInsetsControllerCompat(window, window.decorView)
+            .show(WindowInsetsCompat.Type.systemBars())
+        }
+      }
     }
   }
 
