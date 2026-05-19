@@ -39,6 +39,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -261,9 +263,6 @@ fun PlayerScreen(
           if (player != null) {
             HoistedExoPlayerView(
               exoPlayer = player,
-              isFullscreen = isVideoFullscreen.value,
-              onEnterFullscreen = ::enterFullscreen,
-              onExitFullscreen = ::exitFullscreen,
               onPlaybackReady = { isVideoLoading.value = false },
               onPlaybackError = { errorMsg -> autoFallback(errorMsg) }
             )
@@ -300,6 +299,26 @@ fun PlayerScreen(
             color = Color.White.copy(alpha = 0.7f),
             modifier = Modifier.size(36.dp),
             strokeWidth = 3.dp
+          )
+        }
+      }
+
+      // Compose fullscreen toggle button (bottom-right corner)
+      if (target.value != null) {
+        IconButton(
+          onClick = {
+            if (isVideoFullscreen.value) exitFullscreen() else enterFullscreen()
+          },
+          modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(8.dp)
+            .zIndex(2f)
+        ) {
+          Icon(
+            imageVector = if (isVideoFullscreen.value) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+            contentDescription = if (isVideoFullscreen.value) "退出全屏" else "全屏",
+            tint = Color.White,
+            modifier = Modifier.size(32.dp)
           )
         }
       }
@@ -468,17 +487,11 @@ fun PlayerScreen(
 @Composable
 private fun HoistedExoPlayerView(
   exoPlayer: ExoPlayer,
-  isFullscreen: Boolean,
-  onEnterFullscreen: () -> Unit,
-  onExitFullscreen: () -> Unit,
   onPlaybackReady: () -> Unit,
   onPlaybackError: (String) -> Unit
 ) {
   val currentOnReady = rememberUpdatedState(onPlaybackReady)
   val currentOnError = rememberUpdatedState(onPlaybackError)
-  val currentOnEnterFs = rememberUpdatedState(onEnterFullscreen)
-  val currentOnExitFs = rememberUpdatedState(onExitFullscreen)
-  val playerViewRef = remember { mutableStateOf<PlayerView?>(null) }
 
   DisposableEffect(exoPlayer) {
     val listener = object : Player.Listener {
@@ -493,26 +506,12 @@ private fun HoistedExoPlayerView(
     onDispose { exoPlayer.removeListener(listener) }
   }
 
-  LaunchedEffect(isFullscreen) {
-    kotlinx.coroutines.delay(400)
-    playerViewRef.value?.post {
-      playerViewRef.value?.requestLayout()
-    }
-  }
-
   AndroidView(
     modifier = Modifier.fillMaxSize(),
     factory = { ctx ->
       (LayoutInflater.from(ctx).inflate(R.layout.exo_player_view, null) as PlayerView).apply {
         controllerShowTimeoutMs = 3000
         player = exoPlayer
-        playerViewRef.value = this
-        setFullscreenButtonClickListener { isEnteringFs ->
-          post {
-            if (isEnteringFs) currentOnEnterFs.value.invoke()
-            else currentOnExitFs.value.invoke()
-          }
-        }
       }
     },
     update = { view ->

@@ -58,6 +58,14 @@ extension/player/player.html + player.js                   →  新标签页全�
 - `ensureContentScript()` 先 ping 再注入，防止重复注入。
 - 项目无测试套件、无 lint、无类型检查。改动后在浏览器中手动验证。
 
+## Android 版本号规则
+
+推送安卓代码并打 tag 触发 CI 构建时，**必须**同步更新 `android-app/app/build.gradle.kts` 中的 `versionCode` 和 `versionName`，确保 APK 内显示的版本号与 git tag 一致。
+
+- tag 格式：`android-v{versionName}`（如 `android-v0.3.6`）
+- `versionCode` 每次递增
+- `versionName` 与 tag 中的版本号相同
+
 ## 文档更新规则
 
 提交代码前，若满足以下任一条件，必须先更新 `README.md` 的项目介绍部分：
