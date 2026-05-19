@@ -504,24 +504,19 @@ private fun HoistedExoPlayerView(
     modifier = Modifier.fillMaxSize(),
     factory = { ctx ->
       (LayoutInflater.from(ctx).inflate(R.layout.exo_player_view, null) as PlayerView).apply {
-        layoutParams = FrameLayout.LayoutParams(
-          ViewGroup.LayoutParams.MATCH_PARENT,
-          ViewGroup.LayoutParams.MATCH_PARENT
-        )
         controllerShowTimeoutMs = 3000
         player = exoPlayer
         playerViewRef.value = this
+        setFullscreenButtonClickListener { isEnteringFs ->
+          post {
+            if (isEnteringFs) currentOnEnterFs.value.invoke()
+            else currentOnExitFs.value.invoke()
+          }
+        }
       }
     },
     update = { view ->
       view.player = exoPlayer
-      view.controllerShowTimeoutMs = if (isFullscreen) 5000 else 3000
-      view.setFullscreenButtonClickListener { isEnteringFs ->
-        view.post {
-          if (isEnteringFs) currentOnEnterFs.value.invoke()
-          else currentOnExitFs.value.invoke()
-        }
-      }
     }
   )
 }
