@@ -417,7 +417,7 @@ fun PlayerScreen(
           modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp),
-          verticalArrangement = Arrangement.spacedBy(4.dp)
+          verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           Text(
             "可用源：",
@@ -496,11 +496,11 @@ fun PlayerScreen(
           val visibleEpisodes = if (episodeExpanded.value) uiState.episodes
             else uiState.episodes.take(maxVisibleEpisodes)
 
-          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             visibleEpisodes.chunked(2).forEach { rowEpisodes ->
               Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
               ) {
                 rowEpisodes.forEachIndexed { _, ep ->
                   val epIndex = uiState.episodes.indexOf(ep)
@@ -508,7 +508,7 @@ fun PlayerScreen(
                   if (isCurrent) {
                     Button(
                       onClick = {},
-                      modifier = Modifier.weight(1f).height(40.dp),
+                      modifier = Modifier.weight(1f).height(36.dp),
                       shape = RoundedCornerShape(9999.dp),
                       colors = ButtonDefaults.buttonColors(
                         containerColor = AppColors.ActionBlue,
@@ -522,7 +522,7 @@ fun PlayerScreen(
                       onClick = { onSwitchEpisode(epIndex) },
                       modifier = Modifier
                         .weight(1f)
-                        .height(40.dp)
+                        .height(36.dp)
                         .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(9999.dp)),
                       shape = RoundedCornerShape(9999.dp),
                       colors = ButtonDefaults.buttonColors(
@@ -617,7 +617,7 @@ private fun HoistedWebView(
   val fullscreenCss = """
     javascript:(function(){
       var s=document.createElement('style');
-      s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;background:#000!important}video,iframe,.player,.dplayer,.video-js,.art-video-player,[class*=player]{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;background:#000!important}header,footer,nav,.ad,.ads,.advertisement,[class*=header],[class*=footer],[class*=nav]{display:none!important}';
+      s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;background:#000!important}video,iframe,.player,.dplayer,.video-js,.art-video-player,[class*=player]{width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;object-fit:contain!important;background:#000!important}header,footer,nav,.ad,.ads,.advertisement,[class*=header],[class*=footer],[class*=nav]{display:none!important}video::-webkit-media-controls-fullscreen-button,.dplayer-full-in-icon,.dplayer-full-icon,.dplayer-setting-fullscreen,.art-control-fullscreen,.art-control-fullscreenWeb,.vjs-fullscreen-control,.xgplayer-fullscreen,.xgplayer-cssfullscreen,.prism-fullscreen-btn,.mfp-fullscreen{display:none!important;width:0!important;height:0!important;overflow:hidden!important}';
       document.head.appendChild(s);
     })()
   """.trimIndent()

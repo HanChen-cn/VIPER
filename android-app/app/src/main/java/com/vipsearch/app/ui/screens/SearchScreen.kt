@@ -265,11 +265,11 @@ private fun EpisodeGrid(
   currentEpisodeName: String,
   onEpisodeClick: (showName: String, episodeName: String, playUrl: String, altUrls: List<String>) -> Unit
 ) {
-  Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
     episodes.chunked(EPISODE_COLUMNS).forEach { rowEpisodes ->
       Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
       ) {
         rowEpisodes.forEach { ep ->
           val isCurrent = showName == currentShowName &&
@@ -301,7 +301,7 @@ private fun EpisodePillButton(
   if (isCurrent) {
     Button(
       onClick = onClick,
-      modifier = modifier.height(40.dp),
+      modifier = modifier.height(36.dp),
       shape = PillShape,
       colors = ButtonDefaults.buttonColors(
         containerColor = ActionBlue,
@@ -320,7 +320,7 @@ private fun EpisodePillButton(
     Button(
       onClick = onClick,
       modifier = modifier
-        .height(40.dp)
+        .height(36.dp)
         .border(1.dp, Color.White.copy(alpha = 0.35f), PillShape),
       shape = PillShape,
       colors = ButtonDefaults.buttonColors(

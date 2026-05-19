@@ -2,9 +2,11 @@
 <resources>
   <style name="Theme.VipSearch" parent="Theme.AppCompat.NoActionBar">
     <item name="android:windowBackground">@android:color/black</item>
-    <item name="android:statusBarColor">@android:color/transparent</item>
-    <item name="android:navigationBarColor">@android:color/transparent</item>
+    <item name="android:statusBarColor">#FF1D1D1F</item>
+    <item name="android:navigationBarColor">#FF272729</item>
     <item name="android:windowLightStatusBar">false</item>
     <item name="android:windowLightNavigationBar">false</item>
+    <item name="android:enforceNavigationBarContrast">false</item>
+    <item name="android:enforceStatusBarContrast">false</item>
   </style>
 </resources>
