@@ -1,23 +1,34 @@
 package com.vipsearch.app.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.vipsearch.app.ui.theme.AppColors
 import com.vipsearch.app.ui.viewmodel.FavoritesUiState
+
+private val PillShape = RoundedCornerShape(9999.dp)
+private val CardShape = RoundedCornerShape(18.dp)
 
 @Composable
 fun FavoritesScreen(
@@ -26,53 +37,87 @@ fun FavoritesScreen(
   onRemove: (String) -> Unit,
   onSearchFavorite: (String) -> Unit
 ) {
-  LaunchedEffect(Unit) {
-    onReload()
-  }
+  LaunchedEffect(Unit) { onReload() }
 
   Column(
     modifier = Modifier
       .fillMaxSize()
-      .padding(16.dp),
-    verticalArrangement = Arrangement.spacedBy(8.dp)
+      .background(AppColors.Canvas)
+      .padding(horizontal = 16.dp, vertical = 12.dp),
+    verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
-    Text("收藏", style = MaterialTheme.typography.headlineSmall)
+    Text(
+      text = "收藏",
+      color = AppColors.TextPrimary,
+      fontSize = 28.sp,
+      fontWeight = FontWeight.SemiBold,
+      letterSpacing = (-0.28).sp
+    )
+
     LazyColumn(
       modifier = Modifier.fillMaxSize(),
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       if (state.favorites.isEmpty()) {
-        item { Text("暂无收藏") }
+        item {
+          Text("暂无收藏", color = AppColors.TextMuted.copy(alpha = 0.6f), fontSize = 14.sp)
+        }
       } else {
         items(state.favorites) { item ->
-          Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-              verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-              Text(item.showName, style = MaterialTheme.typography.titleMedium)
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clip(CardShape)
+              .background(AppColors.CardSurface)
+              .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+          ) {
+            Text(
+              text = item.showName,
+              color = AppColors.TextPrimary,
+              fontSize = 17.sp,
+              fontWeight = FontWeight.SemiBold,
+              maxLines = 2,
+              overflow = TextOverflow.Ellipsis
+            )
+            val meta = listOf(item.type, item.year, item.remarks)
+              .filter { it.isNotBlank() }
+              .joinToString(" · ")
+            if (meta.isNotBlank()) {
               Text(
-                text = listOf(item.type, item.year, item.remarks).filter { it.isNotBlank() }.joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall
+                text = meta,
+                color = AppColors.TextMuted,
+                fontSize = 14.sp
               )
-              Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            }
+            Row(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              Button(
+                onClick = { onSearchFavorite(item.showName) },
+                shape = PillShape,
+                colors = ButtonDefaults.buttonColors(
+                  containerColor = AppColors.ActionBlue,
+                  contentColor = AppColors.TextPrimary
+                ),
+                modifier = Modifier.weight(1f).height(40.dp)
               ) {
-                Button(
-                  onClick = { onSearchFavorite(item.showName) },
-                  modifier = Modifier.weight(1f)
-                ) {
-                  Text("立即搜索")
-                }
-                OutlinedButton(
-                  onClick = { onRemove(item.showName) },
-                  modifier = Modifier.weight(1f)
-                ) {
-                  Text("取消收藏")
-                }
+                Text("立即搜索", fontSize = 14.sp)
+              }
+              Button(
+                onClick = { onRemove(item.showName) },
+                shape = PillShape,
+                colors = ButtonDefaults.buttonColors(
+                  containerColor = Color.Transparent,
+                  contentColor = AppColors.TextMuted
+                ),
+                modifier = Modifier
+                  .weight(1f)
+                  .height(40.dp)
+                  .border(1.dp, Color.White.copy(alpha = 0.35f), PillShape)
+              ) {
+                Text("取消收藏", fontSize = 14.sp)
               }
             }
           }

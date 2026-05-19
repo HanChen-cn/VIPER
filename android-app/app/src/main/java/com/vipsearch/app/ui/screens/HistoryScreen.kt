@@ -1,23 +1,37 @@
 package com.vipsearch.app.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.vipsearch.app.ui.theme.AppColors
 import com.vipsearch.app.ui.viewmodel.HistoryUiState
+
+private val PillShape = RoundedCornerShape(9999.dp)
+private val CardShape = RoundedCornerShape(18.dp)
 
 @Composable
 fun HistoryScreen(
@@ -27,22 +41,30 @@ fun HistoryScreen(
   onSearchKeyword: (String) -> Unit,
   onPlayHistory: (showName: String, episodeName: String, url: String) -> Unit
 ) {
-  LaunchedEffect(Unit) {
-    onReload()
-  }
+  LaunchedEffect(Unit) { onReload() }
 
   Column(
     modifier = Modifier
       .fillMaxSize()
-      .padding(16.dp),
-    verticalArrangement = Arrangement.spacedBy(8.dp)
+      .background(AppColors.Canvas)
+      .padding(horizontal = 16.dp, vertical = 12.dp),
+    verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
-    Text("历史", style = MaterialTheme.typography.headlineSmall)
-    Button(
-      onClick = onClearSearchHistory,
-      modifier = Modifier.fillMaxWidth()
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
     ) {
-      Text("清空搜索历史")
+      Text(
+        text = "历史",
+        color = AppColors.TextPrimary,
+        fontSize = 28.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = (-0.28).sp
+      )
+      TextButton(onClick = onClearSearchHistory) {
+        Text("清空搜索历史", color = AppColors.ErrorRed, fontSize = 14.sp)
+      }
     }
 
     LazyColumn(
@@ -50,56 +72,101 @@ fun HistoryScreen(
       verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
       item {
-        Text("搜索历史", style = MaterialTheme.typography.titleMedium)
+        Text(
+          text = "搜索历史",
+          color = AppColors.TextMuted,
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+        )
       }
+
       if (state.searchHistory.isEmpty()) {
-        item { Text("暂无搜索历史") }
+        item {
+          Text("暂无搜索历史", color = AppColors.TextMuted.copy(alpha = 0.6f), fontSize = 14.sp)
+        }
       } else {
         items(state.searchHistory) { item ->
-          Card(modifier = Modifier.fillMaxWidth()) {
-            Row(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-              horizontalArrangement = Arrangement.spacedBy(12.dp)
+          Row(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clip(CardShape)
+              .background(AppColors.CardSurface)
+              .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+          ) {
+            Text(
+              text = item.keyword,
+              color = AppColors.TextPrimary,
+              fontSize = 16.sp,
+              modifier = Modifier.weight(1f),
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
+            Button(
+              onClick = { onSearchKeyword(item.keyword) },
+              shape = PillShape,
+              colors = ButtonDefaults.buttonColors(
+                containerColor = AppColors.ActionBlue,
+                contentColor = AppColors.TextPrimary
+              ),
+              modifier = Modifier.height(36.dp)
             ) {
-              Text(
-                text = item.keyword,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyLarge
-              )
-              OutlinedButton(onClick = { onSearchKeyword(item.keyword) }) {
-                Text("再次搜索")
-              }
+              Text("搜索", fontSize = 13.sp)
             }
           }
         }
       }
 
       item {
-        Text("播放历史", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+          text = "播放历史",
+          color = AppColors.TextMuted,
+          fontSize = 14.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.padding(bottom = 4.dp)
+        )
       }
+
       if (state.playHistory.isEmpty()) {
-        item { Text("暂无播放历史") }
+        item {
+          Text("暂无播放历史", color = AppColors.TextMuted.copy(alpha = 0.6f), fontSize = 14.sp)
+        }
       } else {
         items(state.playHistory) { item ->
-          Card(modifier = Modifier.fillMaxWidth()) {
-            Column(
-              modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-              verticalArrangement = Arrangement.spacedBy(8.dp)
+          Column(
+            modifier = Modifier
+              .fillMaxWidth()
+              .clip(CardShape)
+              .background(AppColors.CardSurface)
+              .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+          ) {
+            Text(
+              text = item.showName,
+              color = AppColors.TextPrimary,
+              fontSize = 16.sp,
+              fontWeight = FontWeight.SemiBold,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis
+            )
+            Text(
+              text = item.episodeName,
+              color = AppColors.TextMuted,
+              fontSize = 14.sp
+            )
+            Button(
+              onClick = { onPlayHistory(item.showName, item.episodeName, item.url) },
+              shape = PillShape,
+              colors = ButtonDefaults.buttonColors(
+                containerColor = AppColors.ActionBlue,
+                contentColor = AppColors.TextPrimary
+              ),
+              modifier = Modifier.fillMaxWidth().height(40.dp)
             ) {
-              Text(
-                text = "${item.showName} - ${item.episodeName}",
-                style = MaterialTheme.typography.bodyLarge
-              )
-              Button(
-                onClick = { onPlayHistory(item.showName, item.episodeName, item.url) },
-                modifier = Modifier.fillMaxWidth()
-              ) {
-                Text("继续播放")
-              }
+              Text("继续播放", fontSize = 14.sp)
             }
           }
         }

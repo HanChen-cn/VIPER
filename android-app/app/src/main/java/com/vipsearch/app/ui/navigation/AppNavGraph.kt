@@ -3,8 +3,10 @@ package com.vipsearch.app.ui.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -91,7 +93,10 @@ fun AppNavGraph(appContainer: AppContainer) {
   Scaffold(
     bottomBar = {
       if (showBottomBar) {
-        NavigationBar {
+        NavigationBar(
+          containerColor = Color(0xFF272729),
+          contentColor = Color.White
+        ) {
           tabs.forEach { tab ->
             val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
             NavigationBarItem(
@@ -103,8 +108,20 @@ fun AppNavGraph(appContainer: AppContainer) {
                   restoreState = true
                 }
               },
-              label = { Text(tab.title) },
-              icon = {}
+              label = {
+                Text(
+                  tab.title,
+                  color = if (selected) Color(0xFF0066CC) else Color(0xFFCCCCCC)
+                )
+              },
+              icon = {},
+              colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color(0xFF0066CC),
+                selectedTextColor = Color(0xFF0066CC),
+                unselectedIconColor = Color(0xFFCCCCCC),
+                unselectedTextColor = Color(0xFFCCCCCC),
+                indicatorColor = Color(0xFF0066CC).copy(alpha = 0.12f)
+              )
             )
           }
         }

@@ -23,8 +23,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -44,27 +42,32 @@ import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
+import com.vipsearch.app.ui.theme.AppColors
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -78,7 +81,6 @@ import com.vipsearch.app.player.PlaybackTarget
 import com.vipsearch.app.player.SourceSwitchController
 import com.vipsearch.app.ui.viewmodel.PlayerUiState
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PlayerScreen(
   uiState: PlayerUiState,
@@ -236,10 +238,12 @@ fun PlayerScreen(
         }
         Text(
           text = "${session.showName} · ${session.episodeName}",
-          style = MaterialTheme.typography.titleMedium,
           color = Color.White,
+          fontSize = 16.sp,
+          fontWeight = FontWeight.SemiBold,
           modifier = Modifier.weight(1f),
-          maxLines = 1
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis
         )
       }
     }
@@ -337,26 +341,39 @@ fun PlayerScreen(
         if (uiState.hasNextEpisode) {
           Button(
             onClick = onNextEpisode,
-            modifier = Modifier.weight(1f)
+            shape = RoundedCornerShape(9999.dp),
+            colors = ButtonDefaults.buttonColors(
+              containerColor = AppColors.ActionBlue,
+              contentColor = Color.White
+            ),
+            modifier = Modifier.weight(1f).height(40.dp)
           ) {
-            Icon(Icons.Default.SkipNext, contentDescription = null)
+            Icon(Icons.Default.SkipNext, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text("下一集")
+            Text("下一集", fontSize = 14.sp)
           }
         }
 
-        FilledTonalButton(
+        Button(
           onClick = {
             val expanding = !showSourceList.value
             showSourceList.value = expanding
             if (expanding) onRequestExtraSources()
           },
-          modifier = Modifier.weight(1f)
+          shape = RoundedCornerShape(9999.dp),
+          colors = ButtonDefaults.buttonColors(
+            containerColor = AppColors.CardSurface,
+            contentColor = AppColors.TextMuted
+          ),
+          modifier = Modifier.weight(1f).height(40.dp)
         ) {
-          Text(if (showSourceList.value) "收起换源 ▲" else "换源 ▼")
+          Text(
+            if (showSourceList.value) "收起换源 ▲" else "换源 ▼",
+            fontSize = 14.sp
+          )
         }
 
-        OutlinedButton(
+        Button(
           onClick = {
             val url = currentUrl.value
             if (url.isNotBlank()) {
@@ -364,27 +381,33 @@ fun PlayerScreen(
               clipboard.setPrimaryClip(ClipData.newPlainText("播放链接", url))
               statusHint.value = "链接已复制"
             }
-          }
+          },
+          shape = RoundedCornerShape(9999.dp),
+          colors = ButtonDefaults.buttonColors(
+            containerColor = AppColors.CardSurface,
+            contentColor = AppColors.TextMuted
+          ),
+          modifier = Modifier.height(40.dp)
         ) {
-          Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+          Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp))
           Spacer(modifier = Modifier.width(4.dp))
-          Text("复制")
+          Text("复制", fontSize = 14.sp)
         }
       }
 
       if (statusHint.value.isNotBlank()) {
         Text(
           text = statusHint.value,
-          color = MaterialTheme.colorScheme.error,
-          style = MaterialTheme.typography.bodySmall,
+          color = AppColors.ErrorRed,
+          fontSize = 13.sp,
           modifier = Modifier.padding(horizontal = 12.dp)
         )
       }
       if (uiState.error.isNotBlank()) {
         Text(
           text = uiState.error,
-          color = MaterialTheme.colorScheme.error,
-          style = MaterialTheme.typography.bodySmall,
+          color = AppColors.ErrorRed,
+          fontSize = 13.sp,
           modifier = Modifier.padding(horizontal = 12.dp)
         )
       }
@@ -398,26 +421,30 @@ fun PlayerScreen(
         ) {
           Text(
             "可用源：",
-            style = MaterialTheme.typography.labelMedium,
+            color = AppColors.TextMuted,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(bottom = 4.dp)
           )
           if (uiState.loadingExtraSources) {
-            Text("搜索其他源中...", style = MaterialTheme.typography.bodySmall)
+            Text("搜索其他源中...", color = AppColors.TextMuted, fontSize = 13.sp)
           }
           switchController.all().forEachIndexed { index, sourceUrl ->
             val selected = sourceUrl == currentUrl.value
             if (selected) {
               Button(
                 onClick = {},
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().height(36.dp),
+                shape = RoundedCornerShape(9999.dp),
                 colors = ButtonDefaults.buttonColors(
-                  containerColor = MaterialTheme.colorScheme.primary
+                  containerColor = AppColors.ActionBlue,
+                  contentColor = Color.White
                 )
               ) {
-                Text("当前源 ${index + 1}")
+                Text("当前源 ${index + 1}", fontSize = 13.sp)
               }
             } else {
-              OutlinedButton(
+              Button(
                 onClick = {
                   val switched = switchController.switchTo(index)
                   if (!switched.isNullOrBlank()) {
@@ -425,14 +452,26 @@ fun PlayerScreen(
                     statusHint.value = ""
                   }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .height(36.dp)
+                  .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(9999.dp)),
+                shape = RoundedCornerShape(9999.dp),
+                colors = ButtonDefaults.buttonColors(
+                  containerColor = Color.Transparent,
+                  contentColor = AppColors.TextMuted
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
               ) {
-                Text("源 ${index + 1}")
+                Text("源 ${index + 1}", fontSize = 13.sp)
               }
             }
           }
         }
       }
+
+      val episodeExpanded = remember { mutableStateOf(false) }
+      val maxVisibleEpisodes = 8
 
       Column(
         modifier = Modifier
@@ -446,39 +485,80 @@ fun PlayerScreen(
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically
         ) {
-          Text("剧集列表", style = MaterialTheme.typography.titleSmall)
+          Text("剧集列表", color = AppColors.TextPrimary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
           if (uiState.loadingEpisodes) {
-            Text("加载中...", style = MaterialTheme.typography.bodySmall)
+            Text("加载中...", color = AppColors.TextMuted, fontSize = 13.sp)
           }
         }
         Spacer(modifier = Modifier.height(8.dp))
 
         if (uiState.episodes.isNotEmpty()) {
-          FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.fillMaxWidth()
-          ) {
-            uiState.episodes.forEachIndexed { index, ep ->
-              val isCurrent = index == uiState.currentEpisodeIndex
-              if (isCurrent) {
-                Button(
-                  onClick = {},
-                  colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                  )
-                ) {
-                  Text(ep.name)
+          val visibleEpisodes = if (episodeExpanded.value) uiState.episodes
+            else uiState.episodes.take(maxVisibleEpisodes)
+
+          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            visibleEpisodes.chunked(2).forEach { rowEpisodes ->
+              Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+              ) {
+                rowEpisodes.forEachIndexed { _, ep ->
+                  val epIndex = uiState.episodes.indexOf(ep)
+                  val isCurrent = epIndex == uiState.currentEpisodeIndex
+                  if (isCurrent) {
+                    Button(
+                      onClick = {},
+                      modifier = Modifier.weight(1f).height(40.dp),
+                      shape = RoundedCornerShape(9999.dp),
+                      colors = ButtonDefaults.buttonColors(
+                        containerColor = AppColors.ActionBlue,
+                        contentColor = Color.White
+                      )
+                    ) {
+                      Text(ep.name, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                  } else {
+                    Button(
+                      onClick = { onSwitchEpisode(epIndex) },
+                      modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp)
+                        .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(9999.dp)),
+                      shape = RoundedCornerShape(9999.dp),
+                      colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = AppColors.TextMuted
+                      ),
+                      elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                    ) {
+                      Text(ep.name, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                  }
                 }
-              } else {
-                OutlinedButton(onClick = { onSwitchEpisode(index) }) {
-                  Text(ep.name)
+                if (rowEpisodes.size < 2) {
+                  Spacer(modifier = Modifier.weight(1f))
                 }
               }
             }
           }
+
+          if (uiState.episodes.size > maxVisibleEpisodes) {
+            androidx.compose.material3.TextButton(
+              onClick = { episodeExpanded.value = !episodeExpanded.value },
+              modifier = Modifier.fillMaxWidth()
+            ) {
+              Text(
+                text = if (episodeExpanded.value) "收起剧集"
+                  else "展开全部（${uiState.episodes.size} 集）",
+                color = AppColors.SkyBlue,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+              )
+            }
+          }
         } else if (!uiState.loadingEpisodes) {
-          Text("暂无剧集信息", style = MaterialTheme.typography.bodySmall)
+          Text("暂无剧集信息", color = AppColors.TextMuted, fontSize = 13.sp)
         }
       }
     }
