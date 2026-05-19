@@ -248,6 +248,7 @@ fun PlayerScreen(
           if (player != null) {
             HoistedExoPlayerView(
               exoPlayer = player,
+              isFullscreen = isVideoFullscreen.value,
               onEnterFullscreen = ::enterFullscreen,
               onExitFullscreen = ::exitFullscreen,
               onPlaybackReady = { isVideoLoading.value = false },
@@ -454,6 +455,7 @@ fun PlayerScreen(
 @Composable
 private fun HoistedExoPlayerView(
   exoPlayer: ExoPlayer,
+  isFullscreen: Boolean,
   onEnterFullscreen: () -> Unit,
   onExitFullscreen: () -> Unit,
   onPlaybackReady: () -> Unit,
@@ -491,6 +493,11 @@ private fun HoistedExoPlayerView(
     },
     update = { view ->
       view.player = exoPlayer
+      view.controllerShowTimeoutMs = if (isFullscreen) 5000 else 3000
+      view.post {
+        view.requestLayout()
+        view.invalidate()
+      }
       view.setFullscreenButtonClickListener { isEnteringFs ->
         if (isEnteringFs) currentOnEnterFs.value.invoke()
         else currentOnExitFs.value.invoke()
