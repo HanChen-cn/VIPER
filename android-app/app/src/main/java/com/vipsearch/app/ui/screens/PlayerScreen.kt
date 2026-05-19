@@ -593,6 +593,7 @@ private fun HoistedExoPlayerView(
       (LayoutInflater.from(ctx).inflate(R.layout.exo_player_view, null) as PlayerView).apply {
         controllerShowTimeoutMs = 3000
         player = exoPlayer
+        setFullscreenButtonClickListener(null)
       }
     },
     update = { view ->
