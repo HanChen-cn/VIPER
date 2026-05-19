@@ -91,6 +91,8 @@ fun AppNavGraph(appContainer: AppContainer) {
   }
 
   Scaffold(
+    containerColor = Color(0xFF1D1D1F),
+    contentColor = Color.White,
     bottomBar = {
       if (showBottomBar) {
         NavigationBar(
