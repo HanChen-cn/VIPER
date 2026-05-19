@@ -13,8 +13,8 @@ android {
     applicationId = "com.vipsearch.app"
     minSdk = 26
     targetSdk = 35
-    versionCode = 14
-    versionName = "0.3.6"
+    versionCode = 15
+    versionName = "0.4.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

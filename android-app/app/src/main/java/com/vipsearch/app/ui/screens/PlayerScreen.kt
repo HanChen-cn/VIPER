@@ -221,22 +221,23 @@ fun PlayerScreen(
     BackHandler { exitFullscreen() }
   }
 
-  Column(modifier = Modifier.fillMaxSize()) {
+  Column(modifier = Modifier.fillMaxSize().background(Color(0xFF1D1D1F))) {
     // Top bar — hidden in fullscreen
     if (!isVideoFullscreen.value) {
       Row(
         modifier = Modifier
           .fillMaxWidth()
-          .background(MaterialTheme.colorScheme.surface)
+          .background(Color(0xFF272729))
           .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
         IconButton(onClick = onBack) {
-          Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+          Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = Color.White)
         }
         Text(
           text = "${session.showName} · ${session.episodeName}",
           style = MaterialTheme.typography.titleMedium,
+          color = Color.White,
           modifier = Modifier.weight(1f),
           maxLines = 1
         )

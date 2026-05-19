@@ -24,13 +24,23 @@ class UpdateChecker(
         .build()
       httpClient.newCall(request).execute().use { response ->
         if (!response.isSuccessful) return@withContext null
-        val json = JSONObject(response.body?.string() ?: return@withContext null)
-        val tagName = json.optString("tag_name", "")
+        val jsonArray = org.json.JSONArray(response.body?.string() ?: return@withContext null)
+        var targetRelease: JSONObject? = null
+        for (i in 0 until jsonArray.length()) {
+          val release = jsonArray.getJSONObject(i)
+          val tag = release.optString("tag_name", "")
+          if (tag.startsWith("android-v")) {
+            targetRelease = release
+            break
+          }
+        }
+        if (targetRelease == null) return@withContext null
+        val tagName = targetRelease.optString("tag_name", "")
         val latestVersion = tagName.removePrefix("android-v")
         if (latestVersion.isBlank() || !isNewer(latestVersion, currentVersion)) {
           return@withContext null
         }
-        val assets = json.optJSONArray("assets")
+        val assets = targetRelease.optJSONArray("assets")
         val apkUrl = (0 until (assets?.length() ?: 0))
           .map { assets!!.getJSONObject(it) }
           .firstOrNull { it.optString("name", "").endsWith(".apk") }
@@ -41,8 +51,8 @@ class UpdateChecker(
         AppUpdate(
           versionName = latestVersion,
           downloadUrl = apkUrl,
-          releaseNotes = json.optString("body", ""),
-          htmlUrl = json.optString("html_url", "")
+          releaseNotes = targetRelease.optString("body", ""),
+          htmlUrl = targetRelease.optString("html_url", "")
         )
       }
     }.getOrNull()
@@ -62,6 +72,6 @@ class UpdateChecker(
 
   companion object {
     private const val RELEASES_API =
-      "https://api.github.com/repos/HanChen-cn/VIPER/releases/latest"
+      "https://api.github.com/repos/HanChen-cn/VIPER/releases?per_page=10"
   }
 }

@@ -7,4 +7,5 @@
     android:layout_height="match_parent"
     app:surface_type="texture_view"
     app:show_buffering="when_playing"
-    app:use_controller="true" />
+    app:use_controller="true"
+    app:show_fullscreen_button="false" />
