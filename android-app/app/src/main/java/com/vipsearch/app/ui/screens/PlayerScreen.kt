@@ -62,6 +62,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -278,7 +279,7 @@ fun PlayerScreen(
 
       if (isVideoLoading.value && target.value != null) {
         Box(
-          modifier = Modifier.fillMaxSize(),
+          modifier = Modifier.fillMaxSize().zIndex(1f),
           contentAlignment = Alignment.Center
         ) {
           CircularProgressIndicator(
@@ -484,6 +485,7 @@ private fun HoistedExoPlayerView(
           ViewGroup.LayoutParams.MATCH_PARENT,
           ViewGroup.LayoutParams.MATCH_PARENT
         )
+        controllerShowTimeoutMs = 3000
         player = exoPlayer
       }
     },
@@ -534,6 +536,10 @@ private fun HoistedWebView(
       cookieManager.setAcceptCookie(true)
 
       val webView = WebView(context).apply {
+        layoutParams = FrameLayout.LayoutParams(
+          ViewGroup.LayoutParams.MATCH_PARENT,
+          ViewGroup.LayoutParams.MATCH_PARENT
+        )
         cookieManager.setAcceptThirdPartyCookies(this, true)
         setBackgroundColor(android.graphics.Color.BLACK)
         settings.javaScriptEnabled = true
