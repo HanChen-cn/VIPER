@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
@@ -16,6 +17,7 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import com.vipsearch.app.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -477,15 +479,12 @@ private fun HoistedExoPlayerView(
   AndroidView(
     modifier = Modifier.fillMaxSize(),
     factory = { ctx ->
-      PlayerView(ctx).apply {
+      (LayoutInflater.from(ctx).inflate(R.layout.exo_player_view, null) as PlayerView).apply {
         layoutParams = FrameLayout.LayoutParams(
           ViewGroup.LayoutParams.MATCH_PARENT,
           ViewGroup.LayoutParams.MATCH_PARENT
         )
-        useController = true
         player = exoPlayer
-        controllerShowTimeoutMs = 3000
-        setShowBuffering(PlayerView.SHOW_BUFFERING_NEVER)
       }
     },
     update = { view ->
