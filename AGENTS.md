@@ -65,6 +65,8 @@ extension/player/player.html + player.js                   →  新标签页全�
 - tag 格式：`android-v{versionName}`（如 `android-v0.3.6`）
 - `versionCode` 每次递增
 - `versionName` 与 tag 中的版本号相同
+- **禁止删除已推送的 tag 再重建**。每次修改代码后必须递增版本号（如 `0.4.0` → `0.4.1`），而非删除旧 tag 重新打
+- 仅当用户**明确要求**删除旧 tag 时才允许执行 `git push origin :refs/tags/xxx`
 
 ## Git Commit 规范
 
