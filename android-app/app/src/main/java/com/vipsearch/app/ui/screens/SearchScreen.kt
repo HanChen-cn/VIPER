@@ -129,7 +129,7 @@ fun SearchScreen(
       ) {
         if (state.loading) {
           CircularProgressIndicator(
-            modifier = Modifier.height(18.dp),
+            modifier = Modifier.size(16.dp),
             color = TextPrimary,
             strokeWidth = 2.dp
           )

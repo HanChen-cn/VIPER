@@ -594,6 +594,9 @@ private fun HoistedExoPlayerView(
         controllerShowTimeoutMs = 3000
         player = exoPlayer
         setFullscreenButtonClickListener(null)
+        post {
+          findViewById<View>(androidx.media3.ui.R.id.exo_fullscreen)?.visibility = View.GONE
+        }
       }
     },
     update = { view ->
