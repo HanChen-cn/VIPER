@@ -504,8 +504,10 @@ private fun HoistedExoPlayerView(
       view.player = exoPlayer
       view.controllerShowTimeoutMs = if (isFullscreen) 5000 else 3000
       view.setFullscreenButtonClickListener { isEnteringFs ->
-        if (isEnteringFs) currentOnEnterFs.value.invoke()
-        else currentOnExitFs.value.invoke()
+        view.post {
+          if (isEnteringFs) currentOnEnterFs.value.invoke()
+          else currentOnExitFs.value.invoke()
+        }
       }
     }
   )
