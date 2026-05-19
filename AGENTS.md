@@ -66,6 +66,12 @@ extension/player/player.html + player.js                   →  新标签页全�
 - `versionCode` 每次递增
 - `versionName` 与 tag 中的版本号相同
 
+## Git Commit 规范
+
+- 所有 commit message **必须使用中文**
+- 专业术语、代码标识符（如类名、函数名、文件名）可保留英文
+- 格式示例：`fix(android): 修复 PlayerView 全屏按钮点击后控件无响应`
+
 ## 文档更新规则
 
 提交代码前，若满足以下任一条件，必须先更新 `README.md` 的项目介绍部分：
