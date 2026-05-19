@@ -465,6 +465,7 @@ private fun HoistedExoPlayerView(
   val currentOnError = rememberUpdatedState(onPlaybackError)
   val currentOnEnterFs = rememberUpdatedState(onEnterFullscreen)
   val currentOnExitFs = rememberUpdatedState(onExitFullscreen)
+  val playerViewRef = remember { mutableStateOf<PlayerView?>(null) }
 
   DisposableEffect(exoPlayer) {
     val listener = object : Player.Listener {
@@ -479,6 +480,13 @@ private fun HoistedExoPlayerView(
     onDispose { exoPlayer.removeListener(listener) }
   }
 
+  LaunchedEffect(isFullscreen) {
+    kotlinx.coroutines.delay(400)
+    playerViewRef.value?.post {
+      playerViewRef.value?.requestLayout()
+    }
+  }
+
   AndroidView(
     modifier = Modifier.fillMaxSize(),
     factory = { ctx ->
@@ -489,15 +497,12 @@ private fun HoistedExoPlayerView(
         )
         controllerShowTimeoutMs = 3000
         player = exoPlayer
+        playerViewRef.value = this
       }
     },
     update = { view ->
       view.player = exoPlayer
       view.controllerShowTimeoutMs = if (isFullscreen) 5000 else 3000
-      view.post {
-        view.requestLayout()
-        view.invalidate()
-      }
       view.setFullscreenButtonClickListener { isEnteringFs ->
         if (isEnteringFs) currentOnEnterFs.value.invoke()
         else currentOnExitFs.value.invoke()
