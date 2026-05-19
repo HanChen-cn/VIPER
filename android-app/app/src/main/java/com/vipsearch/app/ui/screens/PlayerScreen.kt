@@ -20,6 +20,8 @@ import android.widget.FrameLayout
 import com.vipsearch.app.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +35,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -49,8 +52,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,7 +69,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import com.vipsearch.app.ui.theme.AppColors
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
@@ -125,7 +125,6 @@ fun PlayerScreen(
       val window = act.window
       if (isVideoFullscreen.value) {
         act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         WindowInsetsControllerCompat(window, window.decorView).let { ctrl ->
           ctrl.hide(WindowInsetsCompat.Type.systemBars())
           ctrl.systemBarsBehavior =
@@ -133,7 +132,6 @@ fun PlayerScreen(
         }
       } else {
         act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        WindowCompat.setDecorFitsSystemWindows(window, true)
         WindowInsetsControllerCompat(window, window.decorView)
           .show(WindowInsetsCompat.Type.systemBars())
       }
@@ -165,24 +163,35 @@ fun PlayerScreen(
     }
   }
 
-  // Manage ExoPlayer lifecycle — create/release when URL changes
+  // Manage ExoPlayer lifecycle — reuse player instance when possible
   DisposableEffect(target.value) {
     val playbackTarget = target.value
     if (playbackTarget is PlaybackTarget.Exo) {
       val url = playbackTarget.mediaUrl
       if (exoPlayerUrl.value != url) {
-        exoPlayer.value?.release()
-        val player = ExoPlayer.Builder(context).build().apply {
-          setMediaItem(MediaItem.fromUri(url))
-          seekTo(playbackPositions[url] ?: 0L)
-          prepare()
-          playWhenReady = true
+        val existing = exoPlayer.value
+        if (existing != null) {
+          playbackPositions[exoPlayerUrl.value] = existing.currentPosition
+          existing.setMediaItem(MediaItem.fromUri(url))
+          existing.seekTo(playbackPositions[url] ?: 0L)
+          existing.prepare()
+          existing.playWhenReady = true
+        } else {
+          val player = ExoPlayer.Builder(context).build().apply {
+            setMediaItem(MediaItem.fromUri(url))
+            seekTo(playbackPositions[url] ?: 0L)
+            prepare()
+            playWhenReady = true
+          }
+          exoPlayer.value = player
         }
-        exoPlayer.value = player
         exoPlayerUrl.value = url
       }
     } else {
-      exoPlayer.value?.release()
+      exoPlayer.value?.let {
+        playbackPositions[exoPlayerUrl.value] = it.currentPosition
+        it.release()
+      }
       exoPlayer.value = null
       exoPlayerUrl.value = ""
     }
@@ -191,11 +200,8 @@ fun PlayerScreen(
 
   // Save position and release ExoPlayer on final dispose
   DisposableEffect(Unit) {
-    // Ensure correct window state on entry
     activity?.let {
-      val window = it.window
-      WindowCompat.setDecorFitsSystemWindows(window, true)
-      WindowInsetsControllerCompat(window, window.decorView)
+      WindowInsetsControllerCompat(it.window, it.window.decorView)
         .show(WindowInsetsCompat.Type.systemBars())
     }
     onDispose {
@@ -210,9 +216,7 @@ fun PlayerScreen(
         isVideoFullscreen.value = false
         activity?.let { act ->
           act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-          val window = act.window
-          WindowCompat.setDecorFitsSystemWindows(window, true)
-          WindowInsetsControllerCompat(window, window.decorView)
+          WindowInsetsControllerCompat(act.window, act.window.decorView)
             .show(WindowInsetsCompat.Type.systemBars())
         }
       }
@@ -431,40 +435,29 @@ fun PlayerScreen(
           }
           switchController.all().forEachIndexed { index, sourceUrl ->
             val selected = sourceUrl == currentUrl.value
-            if (selected) {
-              Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth().height(36.dp),
-                shape = RoundedCornerShape(9999.dp),
-                colors = ButtonDefaults.buttonColors(
-                  containerColor = AppColors.ActionBlue,
-                  contentColor = Color.White
+            Box(
+              modifier = Modifier
+                .fillMaxWidth()
+                .height(36.dp)
+                .clip(RoundedCornerShape(9999.dp))
+                .then(
+                  if (selected) Modifier.background(AppColors.ActionBlue)
+                  else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(9999.dp))
                 )
-              ) {
-                Text("当前源 ${index + 1}", fontSize = 13.sp)
-              }
-            } else {
-              Button(
-                onClick = {
+                .clickable(enabled = !selected) {
                   val switched = switchController.switchTo(index)
                   if (!switched.isNullOrBlank()) {
                     moveTo(switched)
                     statusHint.value = ""
                   }
                 },
-                modifier = Modifier
-                  .fillMaxWidth()
-                  .height(36.dp)
-                  .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(9999.dp)),
-                shape = RoundedCornerShape(9999.dp),
-                colors = ButtonDefaults.buttonColors(
-                  containerColor = Color.Transparent,
-                  contentColor = AppColors.TextMuted
-                ),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-              ) {
-                Text("源 ${index + 1}", fontSize = 13.sp)
-              }
+              contentAlignment = Alignment.Center
+            ) {
+              Text(
+                if (selected) "当前源 ${index + 1}" else "源 ${index + 1}",
+                color = if (selected) Color.White else AppColors.TextMuted,
+                fontSize = 13.sp
+              )
             }
           }
         }
@@ -505,34 +498,26 @@ fun PlayerScreen(
                 rowEpisodes.forEachIndexed { _, ep ->
                   val epIndex = uiState.episodes.indexOf(ep)
                   val isCurrent = epIndex == uiState.currentEpisodeIndex
-                  if (isCurrent) {
-                    Button(
-                      onClick = {},
-                      modifier = Modifier.weight(1f).height(36.dp),
-                      shape = RoundedCornerShape(9999.dp),
-                      colors = ButtonDefaults.buttonColors(
-                        containerColor = AppColors.ActionBlue,
-                        contentColor = Color.White
+                  Box(
+                    modifier = Modifier
+                      .weight(1f)
+                      .height(36.dp)
+                      .clip(RoundedCornerShape(9999.dp))
+                      .then(
+                        if (isCurrent) Modifier.background(AppColors.ActionBlue)
+                        else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(9999.dp))
                       )
-                    ) {
-                      Text(ep.name, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                  } else {
-                    Button(
-                      onClick = { onSwitchEpisode(epIndex) },
-                      modifier = Modifier
-                        .weight(1f)
-                        .height(36.dp)
-                        .border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(9999.dp)),
-                      shape = RoundedCornerShape(9999.dp),
-                      colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Transparent,
-                        contentColor = AppColors.TextMuted
-                      ),
-                      elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-                    ) {
-                      Text(ep.name, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
+                      .clickable { if (!isCurrent) onSwitchEpisode(epIndex) },
+                    contentAlignment = Alignment.Center
+                  ) {
+                    Text(
+                      ep.name,
+                      color = if (isCurrent) Color.White else AppColors.TextMuted,
+                      fontSize = 13.sp,
+                      maxLines = 1,
+                      overflow = TextOverflow.Ellipsis,
+                      modifier = Modifier.padding(horizontal = 12.dp)
+                    )
                   }
                 }
                 if (rowEpisodes.size < 2) {
@@ -622,18 +607,9 @@ private fun HoistedWebView(
     })()
   """.trimIndent()
 
-  // Create WebView once
-  DisposableEffect(url) {
-    val existing = hoistedWebView.value
-    if (existing != null && hoistedWebViewUrl.value == url) {
-      // WebView already exists for this URL, just reload if needed
-      if (existing.url != url) {
-        existing.loadUrl(url)
-      }
-    } else {
-      // Destroy old WebView if URL changed
-      existing?.destroy()
-
+  // Create WebView once, reuse for URL changes
+  DisposableEffect(Unit) {
+    if (hoistedWebView.value == null) {
       val cookieManager = CookieManager.getInstance()
       cookieManager.setAcceptCookie(true)
 
@@ -654,12 +630,8 @@ private fun HoistedWebView(
           .replace(Regex("\\s*wv\\b"), "")
           .replace("; ${android.os.Build.MODEL}", "")
         webChromeClient = object : WebChromeClient() {
-          override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
-            // Not used in this simplified flow
-          }
-          override fun onHideCustomView() {
-            // Not used in this simplified flow
-          }
+          override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {}
+          override fun onHideCustomView() {}
         }
         webViewClient = object : WebViewClient() {
           override fun onPageFinished(view: WebView?, pageUrl: String?) {
@@ -676,10 +648,8 @@ private fun HoistedWebView(
             }
           }
         }
-        loadUrl(url)
       }
       hoistedWebView.value = webView
-      hoistedWebViewUrl.value = url
     }
     onDispose { }
   }
@@ -688,10 +658,15 @@ private fun HoistedWebView(
   if (webView != null) {
     AndroidView(
       modifier = Modifier.fillMaxSize(),
-      factory = { webView },
+      factory = {
+        (webView.parent as? ViewGroup)?.removeView(webView)
+        webView
+      },
       update = { view ->
-        if (view.url != url) {
+        if (hoistedWebViewUrl.value != url) {
+          view.stopLoading()
           view.loadUrl(url)
+          hoistedWebViewUrl.value = url
         }
       }
     )

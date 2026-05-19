@@ -2,6 +2,7 @@ package com.vipsearch.app.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -298,44 +299,24 @@ private fun EpisodePillButton(
   modifier: Modifier = Modifier,
   onClick: () -> Unit
 ) {
-  if (isCurrent) {
-    Button(
-      onClick = onClick,
-      modifier = modifier.height(36.dp),
-      shape = PillShape,
-      colors = ButtonDefaults.buttonColors(
-        containerColor = ActionBlue,
-        contentColor = TextPrimary
-      ),
-      contentPadding = ButtonDefaults.ContentPadding
-    ) {
-      Text(
-        text = episode.name,
-        fontSize = 13.sp,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
+  Box(
+    modifier = modifier
+      .height(36.dp)
+      .clip(PillShape)
+      .then(
+        if (isCurrent) Modifier.background(ActionBlue)
+        else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), PillShape)
       )
-    }
-  } else {
-    Button(
-      onClick = onClick,
-      modifier = modifier
-        .height(36.dp)
-        .border(1.dp, Color.White.copy(alpha = 0.35f), PillShape),
-      shape = PillShape,
-      colors = ButtonDefaults.buttonColors(
-        containerColor = Color.Transparent,
-        contentColor = TextMuted
-      ),
-      elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
-      contentPadding = ButtonDefaults.ContentPadding
-    ) {
-      Text(
-        text = episode.name,
-        fontSize = 13.sp,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-      )
-    }
+      .clickable(onClick = onClick),
+    contentAlignment = Alignment.Center
+  ) {
+    Text(
+      text = episode.name,
+      color = if (isCurrent) TextPrimary else TextMuted,
+      fontSize = 13.sp,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis,
+      modifier = Modifier.padding(horizontal = 12.dp)
+    )
   }
 }
