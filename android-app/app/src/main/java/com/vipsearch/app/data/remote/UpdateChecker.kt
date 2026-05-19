@@ -59,8 +59,10 @@ class UpdateChecker(
   }
 
   private fun isNewer(remote: String, local: String): Boolean {
-    val r = remote.split(".").map { it.toIntOrNull() ?: 0 }
-    val l = local.split(".").map { it.toIntOrNull() ?: 0 }
+    val normalizedRemote = normalizeVersion(remote)
+    val normalizedLocal = normalizeVersion(local)
+    val r = normalizedRemote.split(".").map { it.toIntOrNull() ?: 0 }
+    val l = normalizedLocal.split(".").map { it.toIntOrNull() ?: 0 }
     for (i in 0 until maxOf(r.size, l.size)) {
       val rv = r.getOrElse(i) { 0 }
       val lv = l.getOrElse(i) { 0 }
@@ -68,6 +70,12 @@ class UpdateChecker(
       if (rv < lv) return false
     }
     return false
+  }
+
+  private fun normalizeVersion(version: String): String {
+    return version.trim()
+      .substringBefore("-")
+      .substringBefore("+")
   }
 
   companion object {
