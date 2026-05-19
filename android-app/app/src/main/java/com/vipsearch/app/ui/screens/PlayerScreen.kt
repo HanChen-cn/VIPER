@@ -478,6 +478,10 @@ private fun HoistedExoPlayerView(
     modifier = Modifier.fillMaxSize(),
     factory = { ctx ->
       PlayerView(ctx).apply {
+        layoutParams = FrameLayout.LayoutParams(
+          ViewGroup.LayoutParams.MATCH_PARENT,
+          ViewGroup.LayoutParams.MATCH_PARENT
+        )
         useController = true
         player = exoPlayer
         controllerShowTimeoutMs = 3000
