@@ -98,6 +98,7 @@ fun PlayerScreen(
   val playbackPositions = remember { mutableStateMapOf<String, Long>() }
   val showSourceList = remember { mutableStateOf(false) }
   val isVideoLoading = remember { mutableStateOf(true) }
+  val isBuffering = remember { mutableStateOf(false) }
   val isVideoFullscreen = remember { mutableStateOf(false) }
 
   val context = LocalContext.current
@@ -139,8 +140,10 @@ fun PlayerScreen(
   }
 
   fun moveTo(url: String) {
+    if (url == currentUrl.value) return
     currentUrl.value = url
     isVideoLoading.value = true
+    isBuffering.value = false
     target.value = coordinator.resolve(url)
   }
 
@@ -154,12 +157,19 @@ fun PlayerScreen(
     }
   }
 
-  LaunchedEffect(session.primaryUrl, session.altUrls, uiState.extraSources) {
+  LaunchedEffect(session.primaryUrl) {
     if (session.primaryUrl.isNotBlank()) {
       val combined = (session.altUrls + uiState.extraSources).distinct().filter { it.isNotBlank() }
       switchController.setSources(primary = session.primaryUrl, alternatives = combined)
       moveTo(switchController.current().orEmpty())
       statusHint.value = ""
+    }
+  }
+
+  LaunchedEffect(session.altUrls, uiState.extraSources) {
+    if (currentUrl.value.isNotBlank()) {
+      val combined = (session.altUrls + uiState.extraSources).distinct().filter { it.isNotBlank() }
+      switchController.updateAlternatives(session.primaryUrl, combined)
     }
   }
 
@@ -272,7 +282,11 @@ fun PlayerScreen(
           if (player != null) {
             HoistedExoPlayerView(
               exoPlayer = player,
-              onPlaybackReady = { isVideoLoading.value = false },
+              onPlaybackReady = {
+                isVideoLoading.value = false
+                isBuffering.value = false
+              },
+              onBuffering = { isBuffering.value = true },
               onPlaybackError = { errorMsg -> autoFallback(errorMsg) }
             )
           }
@@ -299,7 +313,7 @@ fun PlayerScreen(
         }
       }
 
-      if (isVideoLoading.value && target.value != null) {
+      if ((isVideoLoading.value || isBuffering.value) && target.value != null) {
         Box(
           modifier = Modifier.fillMaxSize().zIndex(1f),
           contentAlignment = Alignment.Center
@@ -554,15 +568,25 @@ fun PlayerScreen(
 private fun HoistedExoPlayerView(
   exoPlayer: ExoPlayer,
   onPlaybackReady: () -> Unit,
+  onBuffering: () -> Unit,
   onPlaybackError: (String) -> Unit
 ) {
   val currentOnReady = rememberUpdatedState(onPlaybackReady)
+  val currentOnBuffering = rememberUpdatedState(onBuffering)
   val currentOnError = rememberUpdatedState(onPlaybackError)
 
   DisposableEffect(exoPlayer) {
     val listener = object : Player.Listener {
       override fun onPlaybackStateChanged(playbackState: Int) {
-        if (playbackState == Player.STATE_READY) currentOnReady.value.invoke()
+        when (playbackState) {
+          Player.STATE_READY -> currentOnReady.value.invoke()
+          Player.STATE_BUFFERING -> {
+            if (exoPlayer.playWhenReady) currentOnBuffering.value.invoke()
+          }
+        }
+      }
+      override fun onIsPlayingChanged(isPlaying: Boolean) {
+        if (isPlaying) currentOnReady.value.invoke()
       }
       override fun onPlayerError(error: PlaybackException) {
         currentOnError.value.invoke(error.message ?: "播放器错误")

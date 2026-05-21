@@ -14,6 +14,13 @@ class SourceSwitchController(
     autoFallbackCount = 0
   }
 
+  fun updateAlternatives(primary: String, alternatives: List<String>) {
+    val playing = sources.getOrNull(currentIndex)
+    sources.clear()
+    sources += listOf(primary) + alternatives.filter { it != primary }
+    currentIndex = if (playing != null) sources.indexOf(playing).coerceAtLeast(0) else 0
+  }
+
   fun current(): String? = sources.getOrNull(currentIndex)
 
   fun switchTo(index: Int): String? {
