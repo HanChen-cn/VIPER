@@ -3,8 +3,7 @@ package com.vipsearch.app.ui.navigation
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -228,10 +227,10 @@ fun AppNavGraph(appContainer: AppContainer, themeMode: MutableState<ThemeMode>) 
       }
       composable(
         "player",
-        enterTransition = { fadeIn(tween(250)) + slideInVertically(tween(300)) { it / 5 } },
-        exitTransition = { fadeOut(tween(200)) + slideOutVertically(tween(250)) { it / 5 } },
-        popEnterTransition = { fadeIn(tween(200)) },
-        popExitTransition = { fadeOut(tween(200)) + slideOutVertically(tween(250)) { it / 5 } }
+        enterTransition = { fadeIn(tween(350)) },
+        exitTransition = { fadeOut(tween(250)) },
+        popEnterTransition = { fadeIn(tween(250)) },
+        popExitTransition = { fadeOut(tween(250)) }
       ) {
         val vm: PlayerViewModel = viewModel(
           factory = PlayerViewModelFactory(

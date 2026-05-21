@@ -263,7 +263,6 @@ fun PlayerScreen(
     }
 
     // Video container — aspectRatio in portrait, fillMaxSize in fullscreen
-    val videoBg = if (target.value != null) Color.Black else AppColors.Canvas
     Box(
       modifier = if (isVideoFullscreen.value) {
         Modifier
@@ -274,7 +273,7 @@ fun PlayerScreen(
         Modifier
           .fillMaxWidth()
           .aspectRatio(16f / 9f)
-          .background(videoBg)
+          .background(Color.Black)
       }
     ) {
       when (val playbackTarget = target.value) {
@@ -328,11 +327,24 @@ fun PlayerScreen(
           modifier = Modifier.fillMaxSize().zIndex(1f),
           contentAlignment = Alignment.Center
         ) {
-          CircularProgressIndicator(
-            color = Color.White.copy(alpha = 0.7f),
-            modifier = Modifier.size(36.dp),
-            strokeWidth = 3.dp
-          )
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(
+              color = Color.White.copy(alpha = 0.7f),
+              modifier = Modifier.size(32.dp),
+              strokeWidth = 2.5.dp
+            )
+            if (isVideoLoading.value && session.showName.isNotBlank()) {
+              Spacer(modifier = Modifier.height(16.dp))
+              Text(
+                text = "${session.showName} · ${session.episodeName}",
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = 24.dp)
+              )
+            }
+          }
         }
       }
 
