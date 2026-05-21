@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import com.vipsearch.app.ui.navigation.AppNavGraph
 import com.vipsearch.app.ui.theme.VipSearchTheme
+import com.vipsearch.app.ui.theme.rememberThemeMode
 
 class MainActivity : ComponentActivity() {
   private val appContainer by lazy { AppContainer(this) }
@@ -21,8 +22,9 @@ class MainActivity : ComponentActivity() {
 
     appContainer.startWarmup(lifecycleScope)
     setContent {
-      VipSearchTheme {
-        AppNavGraph(appContainer)
+      val themeMode = rememberThemeMode()
+      VipSearchTheme(themeMode = themeMode.value) {
+        AppNavGraph(appContainer, themeMode)
       }
     }
   }

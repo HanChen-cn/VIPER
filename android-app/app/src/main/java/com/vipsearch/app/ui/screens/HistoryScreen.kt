@@ -26,7 +26,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -107,7 +107,7 @@ fun HistoryScreen(
               .fillMaxWidth()
               .clip(CardShape)
               .background(AppColors.CardSurface)
-              .border(1.dp, Color.White.copy(alpha = 0.06f), CardShape)
+              .border(1.dp, AppColors.CardBorder, CardShape)
               .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -169,7 +169,7 @@ fun HistoryScreen(
               .fillMaxWidth()
               .clip(CardShape)
               .background(AppColors.CardSurface)
-              .border(1.dp, Color.White.copy(alpha = 0.06f), CardShape)
+              .border(1.dp, AppColors.CardBorder, CardShape)
               .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
           ) {

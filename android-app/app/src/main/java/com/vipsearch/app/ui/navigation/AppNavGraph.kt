@@ -36,7 +36,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.MutableState
 import com.vipsearch.app.AppContainer
+import androidx.compose.runtime.mutableStateOf
+import com.vipsearch.app.ui.theme.ThemeMode
 import com.vipsearch.app.BuildConfig
 import com.vipsearch.app.data.remote.AppUpdate
 import com.vipsearch.app.data.remote.UpdateChecker
@@ -64,7 +67,7 @@ private data class BottomTab(
 )
 
 @Composable
-fun AppNavGraph(appContainer: AppContainer) {
+fun AppNavGraph(appContainer: AppContainer, themeMode: MutableState<ThemeMode> = mutableStateOf(ThemeMode.SYSTEM)) {
   val navController = rememberNavController()
   val scope = rememberCoroutineScope()
   val pendingUpdate = remember { mutableStateOf<AppUpdate?>(null) }
@@ -173,6 +176,7 @@ fun AppNavGraph(appContainer: AppContainer) {
       composable("search") {
         SearchScreen(
           state = searchVm.state,
+          themeMode = themeMode,
           onKeywordChange = searchVm::onKeywordChange,
           onSearch = searchVm::search,
           onAddFavorite = searchVm::addFavorite,

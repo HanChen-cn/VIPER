@@ -85,7 +85,7 @@ fun FavoritesScreen(
               .fillMaxWidth()
               .clip(CardShape)
               .background(AppColors.CardSurface)
-              .border(1.dp, Color.White.copy(alpha = 0.06f), CardShape)
+              .border(1.dp, AppColors.CardBorder, CardShape)
               .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
           ) {
@@ -132,7 +132,7 @@ fun FavoritesScreen(
                 modifier = Modifier
                   .weight(1f)
                   .height(40.dp)
-                  .border(1.dp, Color.White.copy(alpha = 0.35f), PillShape)
+                  .border(1.dp, AppColors.PillBorder, PillShape)
               ) {
                 Text("取消收藏", fontSize = 14.sp)
               }

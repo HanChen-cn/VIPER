@@ -93,7 +93,7 @@ player (新标签页播放器)      ←  从 session storage 读取播放数据
 ### Android 端
 
 - Kotlin + Jetpack Compose + Material3 + Media3 ExoPlayer
-- 统一暗色主题：Material3 `darkColorScheme` + 集中管理色彩/字体/形状/间距 token
+- 亮暗主题切换：支持跟随系统 / 手动切换（浅色 Apple 风格 + 深色模式），`CompositionLocal` 驱动全局色彩联动
 - 预热测速：App 启动时并发 HEAD 测速所有解析接口，按延迟排序，搜索和播放均使用最快接口
 - 播放页：竖屏 16:9 视口 + 沉浸式横屏全屏（右上角全屏按钮，避开视频控制栏）
 - 播放页功能：下一集、剧集选择列表（FlowRow 网格）、换源（延迟加载，点击时才搜 CMS 备源）

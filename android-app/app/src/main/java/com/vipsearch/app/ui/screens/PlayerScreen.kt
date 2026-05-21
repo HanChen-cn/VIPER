@@ -248,11 +248,11 @@ fun PlayerScreen(
         verticalAlignment = Alignment.CenterVertically
       ) {
         IconButton(onClick = onBack) {
-          Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = Color.White)
+          Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回", tint = AppColors.TextPrimary)
         }
         Text(
           text = "${session.showName} · ${session.episodeName}",
-          color = Color.White,
+          color = AppColors.TextPrimary,
           fontSize = 16.sp,
           fontWeight = FontWeight.SemiBold,
           modifier = Modifier.weight(1f),
@@ -423,7 +423,7 @@ fun PlayerScreen(
       }
 
       if (statusHint.value.isNotBlank()) {
-        val hintColor = if (statusHint.value == "链接已复制") Color(0xFF4CAF50) else AppColors.ErrorRed
+        val hintColor = if (statusHint.value == "链接已复制") AppColors.SuccessGreen else AppColors.ErrorRed
         Text(
           text = statusHint.value,
           color = hintColor,
@@ -466,7 +466,7 @@ fun PlayerScreen(
                 .clip(PillShape)
                 .then(
                   if (selected) Modifier.background(AppColors.ActionBlue)
-                  else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), PillShape)
+                  else Modifier.border(1.dp, AppColors.PillBorder, PillShape)
                 )
                 .clickable(enabled = !selected) {
                   val switched = switchController.switchTo(index)
@@ -529,7 +529,7 @@ fun PlayerScreen(
                       .clip(PillShape)
                       .then(
                         if (isCurrent) Modifier.background(AppColors.ActionBlue)
-                        else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), PillShape)
+                        else Modifier.border(1.dp, AppColors.PillBorder, PillShape)
                       )
                       .clickable { if (!isCurrent) onSwitchEpisode(epIndex) },
                     contentAlignment = Alignment.Center

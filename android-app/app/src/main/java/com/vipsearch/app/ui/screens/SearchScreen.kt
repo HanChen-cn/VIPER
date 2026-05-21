@@ -20,7 +20,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,17 +32,18 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vipsearch.app.data.model.Episode
@@ -48,6 +52,8 @@ import com.vipsearch.app.ui.state.PlaybackSessionStore
 import com.vipsearch.app.ui.theme.AppColors
 import com.vipsearch.app.ui.theme.CardShape
 import com.vipsearch.app.ui.theme.PillShape
+import com.vipsearch.app.ui.theme.ThemeMode
+import com.vipsearch.app.ui.theme.ThemePreference
 import com.vipsearch.app.ui.viewmodel.SearchUiState
 
 private const val EPISODE_COLUMNS = 2
@@ -57,6 +63,7 @@ private const val MAX_VISIBLE_EPISODES = EPISODE_COLUMNS * MAX_EPISODE_ROWS
 @Composable
 fun SearchScreen(
   state: SearchUiState,
+  themeMode: MutableState<ThemeMode> = remember { mutableStateOf(ThemeMode.SYSTEM) },
   onKeywordChange: (String) -> Unit,
   onSearch: () -> Unit,
   onAddFavorite: (show: Show) -> Unit,
@@ -64,6 +71,7 @@ fun SearchScreen(
 ) {
   val expandedEpisodes = remember { mutableStateMapOf<String, Boolean>() }
   val playbackSession = PlaybackSessionStore.session
+  val context = LocalContext.current
 
   Column(
     modifier = Modifier
@@ -72,13 +80,43 @@ fun SearchScreen(
       .padding(horizontal = 16.dp, vertical = 12.dp),
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
-    Text(
-      text = "VIP 视频搜索",
-      color = AppColors.TextPrimary,
-      fontSize = 28.sp,
-      fontWeight = FontWeight.SemiBold,
-      letterSpacing = (-0.28).sp
-    )
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Text(
+        text = "VIP 视频搜索",
+        color = AppColors.TextPrimary,
+        fontSize = 28.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = (-0.28).sp
+      )
+      IconButton(onClick = {
+        val next = when (themeMode.value) {
+          ThemeMode.SYSTEM -> ThemeMode.LIGHT
+          ThemeMode.LIGHT -> ThemeMode.DARK
+          ThemeMode.DARK -> ThemeMode.SYSTEM
+        }
+        themeMode.value = next
+        ThemePreference.set(context, next)
+      }) {
+        Icon(
+          imageVector = when (themeMode.value) {
+            ThemeMode.SYSTEM -> Icons.Outlined.Settings
+            ThemeMode.LIGHT -> Icons.Outlined.LightMode
+            ThemeMode.DARK -> Icons.Outlined.DarkMode
+          },
+          contentDescription = when (themeMode.value) {
+            ThemeMode.SYSTEM -> "跟随系统"
+            ThemeMode.LIGHT -> "浅色模式"
+            ThemeMode.DARK -> "深色模式"
+          },
+          tint = AppColors.TextMuted,
+          modifier = Modifier.size(22.dp)
+        )
+      }
+    }
 
     Row(
       modifier = Modifier.fillMaxWidth(),
@@ -99,7 +137,7 @@ fun SearchScreen(
           .weight(1f)
           .clip(PillShape)
           .background(AppColors.CardSurface)
-          .border(1.dp, Color.White.copy(alpha = 0.08f), PillShape)
+          .border(1.dp, AppColors.InputBorder, PillShape)
           .padding(horizontal = 20.dp, vertical = 12.dp),
         decorationBox = { innerTextField ->
           Row(
@@ -242,7 +280,7 @@ private fun ShowResultCard(
       .fillMaxWidth()
       .clip(CardShape)
       .background(AppColors.CardSurface)
-      .border(1.dp, Color.White.copy(alpha = 0.06f), CardShape)
+      .border(1.dp, AppColors.CardBorder, CardShape)
       .padding(16.dp),
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
@@ -351,7 +389,7 @@ private fun EpisodePillButton(
       .clip(PillShape)
       .then(
         if (isCurrent) Modifier.background(AppColors.ActionBlue)
-        else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), PillShape)
+        else Modifier.border(1.dp, AppColors.PillBorder, PillShape)
       )
       .clickable(onClick = onClick),
     contentAlignment = Alignment.Center
