@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+  <!-- Pulse waveform — up/down/up then center through triangle -->
+  <path
+      android:pathData="M6.48,54 L15.12,54 L25.92,17.28 L36.72,90.72 L47.52,34.56 L56.16,54 L64.8,54 L76.68,54 L88.56,54 L101.52,54"
+      android:strokeWidth="3"
+      android:fillColor="#00000000"
+      android:strokeLineCap="round">
+    <aapt:attr name="android:strokeColor">
+      <gradient
+          android:type="linear"
+          android:startX="6.48"
+          android:startY="54"
+          android:endX="101.52"
+          android:endY="54"
+          android:startColor="#FF2997FF"
+          android:centerColor="#FF00CFFD"
+          android:endColor="#FF00FFD5"/>
+    </aapt:attr>
+  </path>
+
+  <!-- Play triangle — hollow, shifted right -->
+  <path android:pathData="M64.8,36.72 L64.8,71.28 L88.56,54z"
+        android:strokeWidth="2.5"
+        android:strokeColor="#FF00CFFD"
+        android:fillColor="#00000000"/>
+</vector>
