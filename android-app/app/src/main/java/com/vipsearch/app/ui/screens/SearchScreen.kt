@@ -20,7 +20,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.Contrast
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.SearchOff
@@ -93,25 +92,13 @@ fun SearchScreen(
         letterSpacing = (-0.28).sp
       )
       IconButton(onClick = {
-        val next = when (themeMode.value) {
-          ThemeMode.DARK -> ThemeMode.LIGHT
-          ThemeMode.LIGHT -> ThemeMode.SYSTEM
-          ThemeMode.SYSTEM -> ThemeMode.DARK
-        }
+        val next = if (themeMode.value == ThemeMode.DARK) ThemeMode.LIGHT else ThemeMode.DARK
         themeMode.value = next
         ThemePreference.set(context, next)
       }) {
         Icon(
-          imageVector = when (themeMode.value) {
-            ThemeMode.DARK -> Icons.Outlined.DarkMode
-            ThemeMode.LIGHT -> Icons.Outlined.LightMode
-            ThemeMode.SYSTEM -> Icons.Outlined.Contrast
-          },
-          contentDescription = when (themeMode.value) {
-            ThemeMode.DARK -> "深色模式 — 点击切换浅色"
-            ThemeMode.LIGHT -> "浅色模式 — 点击跟随系统"
-            ThemeMode.SYSTEM -> "跟随系统 — 点击切换深色"
-          },
+          imageVector = if (themeMode.value == ThemeMode.DARK) Icons.Outlined.DarkMode else Icons.Outlined.LightMode,
+          contentDescription = if (themeMode.value == ThemeMode.DARK) "切换浅色" else "切换深色",
           tint = AppColors.SkyBlue,
           modifier = Modifier.size(22.dp)
         )

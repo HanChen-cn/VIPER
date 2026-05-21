@@ -15,8 +15,11 @@ object ThemePreference {
     context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
   fun get(context: Context): ThemeMode {
-    val value = prefs(context).getString(KEY_MODE, ThemeMode.SYSTEM.name)
-    return try { ThemeMode.valueOf(value ?: ThemeMode.SYSTEM.name) } catch (_: Exception) { ThemeMode.SYSTEM }
+    val value = prefs(context).getString(KEY_MODE, ThemeMode.DARK.name)
+    return try {
+      val mode = ThemeMode.valueOf(value ?: ThemeMode.DARK.name)
+      if (mode == ThemeMode.SYSTEM) ThemeMode.DARK else mode
+    } catch (_: Exception) { ThemeMode.DARK }
   }
 
   fun set(context: Context, mode: ThemeMode) {
@@ -27,5 +30,6 @@ object ThemePreference {
 @Composable
 fun rememberThemeMode(): androidx.compose.runtime.MutableState<ThemeMode> {
   val context = LocalContext.current
-  return remember { mutableStateOf(ThemePreference.get(context)) }
+  val saved = ThemePreference.get(context)
+  return remember { mutableStateOf(saved) }
 }
