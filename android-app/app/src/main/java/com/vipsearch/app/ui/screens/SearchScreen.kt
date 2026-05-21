@@ -63,7 +63,7 @@ private const val MAX_VISIBLE_EPISODES = EPISODE_COLUMNS * MAX_EPISODE_ROWS
 @Composable
 fun SearchScreen(
   state: SearchUiState,
-  themeMode: MutableState<ThemeMode> = remember { mutableStateOf(ThemeMode.SYSTEM) },
+  themeMode: MutableState<ThemeMode>,
   onKeywordChange: (String) -> Unit,
   onSearch: () -> Unit,
   onAddFavorite: (show: Show) -> Unit,

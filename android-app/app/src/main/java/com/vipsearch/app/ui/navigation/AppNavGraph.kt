@@ -38,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.MutableState
 import com.vipsearch.app.AppContainer
-import androidx.compose.runtime.mutableStateOf
 import com.vipsearch.app.ui.theme.ThemeMode
 import com.vipsearch.app.BuildConfig
 import com.vipsearch.app.data.remote.AppUpdate
@@ -67,7 +66,7 @@ private data class BottomTab(
 )
 
 @Composable
-fun AppNavGraph(appContainer: AppContainer, themeMode: MutableState<ThemeMode> = mutableStateOf(ThemeMode.SYSTEM)) {
+fun AppNavGraph(appContainer: AppContainer, themeMode: MutableState<ThemeMode>) {
   val navController = rememberNavController()
   val scope = rememberCoroutineScope()
   val pendingUpdate = remember { mutableStateOf<AppUpdate?>(null) }
