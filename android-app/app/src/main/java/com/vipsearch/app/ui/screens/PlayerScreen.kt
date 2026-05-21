@@ -263,6 +263,7 @@ fun PlayerScreen(
     }
 
     // Video container — aspectRatio in portrait, fillMaxSize in fullscreen
+    val videoBg = if (target.value != null) Color.Black else AppColors.Canvas
     Box(
       modifier = if (isVideoFullscreen.value) {
         Modifier
@@ -273,7 +274,7 @@ fun PlayerScreen(
         Modifier
           .fillMaxWidth()
           .aspectRatio(16f / 9f)
-          .background(Color.Black)
+          .background(videoBg)
       }
     ) {
       when (val playbackTarget = target.value) {

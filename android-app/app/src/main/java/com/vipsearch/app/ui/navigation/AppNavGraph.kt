@@ -228,10 +228,10 @@ fun AppNavGraph(appContainer: AppContainer, themeMode: MutableState<ThemeMode>) 
       }
       composable(
         "player",
-        enterTransition = { slideInVertically(tween(300)) { it } + fadeIn(tween(300)) },
-        exitTransition = { slideOutVertically(tween(300)) { it } + fadeOut(tween(300)) },
+        enterTransition = { fadeIn(tween(250)) + slideInVertically(tween(300)) { it / 5 } },
+        exitTransition = { fadeOut(tween(200)) + slideOutVertically(tween(250)) { it / 5 } },
         popEnterTransition = { fadeIn(tween(200)) },
-        popExitTransition = { slideOutVertically(tween(300)) { it } + fadeOut(tween(300)) }
+        popExitTransition = { fadeOut(tween(200)) + slideOutVertically(tween(250)) { it / 5 } }
       ) {
         val vm: PlayerViewModel = viewModel(
           factory = PlayerViewModelFactory(

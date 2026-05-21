@@ -20,10 +20,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Contrast
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.SearchOff
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -94,25 +94,25 @@ fun SearchScreen(
       )
       IconButton(onClick = {
         val next = when (themeMode.value) {
-          ThemeMode.SYSTEM -> ThemeMode.LIGHT
-          ThemeMode.LIGHT -> ThemeMode.DARK
-          ThemeMode.DARK -> ThemeMode.SYSTEM
+          ThemeMode.DARK -> ThemeMode.LIGHT
+          ThemeMode.LIGHT -> ThemeMode.SYSTEM
+          ThemeMode.SYSTEM -> ThemeMode.DARK
         }
         themeMode.value = next
         ThemePreference.set(context, next)
       }) {
         Icon(
           imageVector = when (themeMode.value) {
-            ThemeMode.SYSTEM -> Icons.Outlined.Settings
-            ThemeMode.LIGHT -> Icons.Outlined.LightMode
             ThemeMode.DARK -> Icons.Outlined.DarkMode
+            ThemeMode.LIGHT -> Icons.Outlined.LightMode
+            ThemeMode.SYSTEM -> Icons.Outlined.Contrast
           },
           contentDescription = when (themeMode.value) {
-            ThemeMode.SYSTEM -> "跟随系统"
-            ThemeMode.LIGHT -> "浅色模式"
-            ThemeMode.DARK -> "深色模式"
+            ThemeMode.DARK -> "深色模式 — 点击切换浅色"
+            ThemeMode.LIGHT -> "浅色模式 — 点击跟随系统"
+            ThemeMode.SYSTEM -> "跟随系统 — 点击切换深色"
           },
-          tint = AppColors.TextMuted,
+          tint = AppColors.SkyBlue,
           modifier = Modifier.size(22.dp)
         )
       }
