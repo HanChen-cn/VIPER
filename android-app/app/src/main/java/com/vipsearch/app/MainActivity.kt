@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import com.vipsearch.app.ui.navigation.AppNavGraph
+import com.vipsearch.app.ui.theme.VipSearchTheme
 
 class MainActivity : ComponentActivity() {
   private val appContainer by lazy { AppContainer(this) }
@@ -20,7 +21,9 @@ class MainActivity : ComponentActivity() {
 
     appContainer.startWarmup(lifecycleScope)
     setContent {
-      AppNavGraph(appContainer)
+      VipSearchTheme {
+        AppNavGraph(appContainer)
+      }
     }
   }
 }

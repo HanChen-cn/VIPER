@@ -1,18 +1,33 @@
 package com.vipsearch.app.ui.navigation
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -20,7 +35,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.vipsearch.app.AppContainer
 import com.vipsearch.app.BuildConfig
 import com.vipsearch.app.data.remote.AppUpdate
@@ -41,7 +56,12 @@ import com.vipsearch.app.ui.viewmodel.FavoritesViewModelFactory
 import com.vipsearch.app.ui.viewmodel.SearchViewModel
 import com.vipsearch.app.ui.viewmodel.SearchViewModelFactory
 
-private data class BottomTab(val route: String, val title: String)
+private data class BottomTab(
+  val route: String,
+  val title: String,
+  val icon: ImageVector,
+  val selectedIcon: ImageVector
+)
 
 @Composable
 fun AppNavGraph(appContainer: AppContainer) {
@@ -64,9 +84,9 @@ fun AppNavGraph(appContainer: AppContainer) {
   }
 
   val tabs = listOf(
-    BottomTab(route = "search", title = "搜索"),
-    BottomTab(route = "history", title = "历史"),
-    BottomTab(route = "favorites", title = "收藏")
+    BottomTab("search", "搜索", Icons.Outlined.Search, Icons.Filled.Search),
+    BottomTab("history", "历史", Icons.Outlined.History, Icons.Filled.History),
+    BottomTab("favorites", "收藏", Icons.Outlined.FavoriteBorder, Icons.Filled.Favorite)
   )
   val navBackStackEntry by navController.currentBackStackEntryAsState()
   val currentDestination = navBackStackEntry?.destination
@@ -90,14 +110,16 @@ fun AppNavGraph(appContainer: AppContainer) {
     }
   }
 
+  val colors = MaterialTheme.colorScheme
+
   Scaffold(
-    containerColor = Color(0xFF1D1D1F),
-    contentColor = Color.White,
+    containerColor = colors.background,
+    contentColor = colors.onBackground,
     bottomBar = {
       if (showBottomBar) {
         NavigationBar(
-          containerColor = Color(0xFF272729),
-          contentColor = Color.White
+          containerColor = colors.surface,
+          contentColor = colors.onSurface
         ) {
           tabs.forEach { tab ->
             val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
@@ -113,16 +135,22 @@ fun AppNavGraph(appContainer: AppContainer) {
               label = {
                 Text(
                   tab.title,
-                  color = if (selected) Color(0xFF0066CC) else Color(0xFFCCCCCC)
+                  color = if (selected) colors.primary else colors.onSurfaceVariant
                 )
               },
-              icon = {},
+              icon = {
+                Icon(
+                  imageVector = if (selected) tab.selectedIcon else tab.icon,
+                  contentDescription = tab.title,
+                  modifier = Modifier.size(22.dp)
+                )
+              },
               colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFF0066CC),
-                selectedTextColor = Color(0xFF0066CC),
-                unselectedIconColor = Color(0xFFCCCCCC),
-                unselectedTextColor = Color(0xFFCCCCCC),
-                indicatorColor = Color(0xFF0066CC).copy(alpha = 0.12f)
+                selectedIconColor = colors.primary,
+                selectedTextColor = colors.primary,
+                unselectedIconColor = colors.onSurfaceVariant,
+                unselectedTextColor = colors.onSurfaceVariant,
+                indicatorColor = colors.primary.copy(alpha = 0.12f)
               )
             )
           }
@@ -130,10 +158,17 @@ fun AppNavGraph(appContainer: AppContainer) {
       }
     }
   ) { paddingValues ->
+    val tabTransitionIn = fadeIn(tween(200))
+    val tabTransitionOut = fadeOut(tween(200))
+
     NavHost(
       navController = navController,
       startDestination = "search",
-      modifier = Modifier.padding(paddingValues)
+      modifier = Modifier.padding(paddingValues),
+      enterTransition = { tabTransitionIn },
+      exitTransition = { tabTransitionOut },
+      popEnterTransition = { tabTransitionIn },
+      popExitTransition = { tabTransitionOut }
     ) {
       composable("search") {
         SearchScreen(
@@ -188,7 +223,13 @@ fun AppNavGraph(appContainer: AppContainer) {
           }
         )
       }
-      composable("player") {
+      composable(
+        "player",
+        enterTransition = { slideInVertically(tween(300)) { it } + fadeIn(tween(300)) },
+        exitTransition = { slideOutVertically(tween(300)) { it } + fadeOut(tween(300)) },
+        popEnterTransition = { fadeIn(tween(200)) },
+        popExitTransition = { slideOutVertically(tween(300)) { it } + fadeOut(tween(300)) }
+      ) {
         val vm: PlayerViewModel = viewModel(
           factory = PlayerViewModelFactory(
             getAltSourcesUseCase = appContainer.getAltSourcesUseCase,

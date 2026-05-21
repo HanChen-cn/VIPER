@@ -35,7 +35,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -69,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import com.vipsearch.app.ui.theme.AppColors
+import com.vipsearch.app.ui.theme.PillShape
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
@@ -237,13 +237,13 @@ fun PlayerScreen(
     BackHandler { exitFullscreen() }
   }
 
-  Column(modifier = Modifier.fillMaxSize().background(Color(0xFF1D1D1F))) {
+  Column(modifier = Modifier.fillMaxSize().background(AppColors.Canvas)) {
     // Top bar — hidden in fullscreen
     if (!isVideoFullscreen.value) {
       Row(
         modifier = Modifier
           .fillMaxWidth()
-          .background(Color(0xFF272729))
+          .background(AppColors.CardSurface)
           .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
       ) {
@@ -307,7 +307,16 @@ fun PlayerScreen(
               contentAlignment = Alignment.Center
             ) {
               isVideoLoading.value = false
-              Text("请先从搜索页选择剧集", color = Color.White)
+              Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                  Icons.Default.Fullscreen,
+                  contentDescription = null,
+                  tint = Color.White.copy(alpha = 0.4f),
+                  modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("请先从搜索页选择剧集", color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp)
+              }
             }
           }
         }
@@ -359,7 +368,7 @@ fun PlayerScreen(
         if (uiState.hasNextEpisode) {
           Button(
             onClick = onNextEpisode,
-            shape = RoundedCornerShape(9999.dp),
+            shape = PillShape,
             colors = ButtonDefaults.buttonColors(
               containerColor = AppColors.ActionBlue,
               contentColor = Color.White
@@ -378,7 +387,7 @@ fun PlayerScreen(
             showSourceList.value = expanding
             if (expanding) onRequestExtraSources()
           },
-          shape = RoundedCornerShape(9999.dp),
+          shape = PillShape,
           colors = ButtonDefaults.buttonColors(
             containerColor = AppColors.CardSurface,
             contentColor = AppColors.TextMuted
@@ -400,7 +409,7 @@ fun PlayerScreen(
               statusHint.value = "链接已复制"
             }
           },
-          shape = RoundedCornerShape(9999.dp),
+          shape = PillShape,
           colors = ButtonDefaults.buttonColors(
             containerColor = AppColors.CardSurface,
             contentColor = AppColors.TextMuted
@@ -414,9 +423,10 @@ fun PlayerScreen(
       }
 
       if (statusHint.value.isNotBlank()) {
+        val hintColor = if (statusHint.value == "链接已复制") Color(0xFF4CAF50) else AppColors.ErrorRed
         Text(
           text = statusHint.value,
-          color = AppColors.ErrorRed,
+          color = hintColor,
           fontSize = 13.sp,
           modifier = Modifier.padding(horizontal = 12.dp)
         )
@@ -453,10 +463,10 @@ fun PlayerScreen(
               modifier = Modifier
                 .fillMaxWidth()
                 .height(36.dp)
-                .clip(RoundedCornerShape(9999.dp))
+                .clip(PillShape)
                 .then(
                   if (selected) Modifier.background(AppColors.ActionBlue)
-                  else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(9999.dp))
+                  else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), PillShape)
                 )
                 .clickable(enabled = !selected) {
                   val switched = switchController.switchTo(index)
@@ -516,10 +526,10 @@ fun PlayerScreen(
                     modifier = Modifier
                       .weight(1f)
                       .height(36.dp)
-                      .clip(RoundedCornerShape(9999.dp))
+                      .clip(PillShape)
                       .then(
                         if (isCurrent) Modifier.background(AppColors.ActionBlue)
-                        else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), RoundedCornerShape(9999.dp))
+                        else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), PillShape)
                       )
                       .clickable { if (!isCurrent) onSwitchEpisode(epIndex) },
                     contentAlignment = Alignment.Center

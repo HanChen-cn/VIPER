@@ -5,18 +5,23 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -25,10 +30,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vipsearch.app.ui.theme.AppColors
+import com.vipsearch.app.ui.theme.CardShape
+import com.vipsearch.app.ui.theme.PillShape
 import com.vipsearch.app.ui.viewmodel.FavoritesUiState
-
-private val PillShape = RoundedCornerShape(9999.dp)
-private val CardShape = RoundedCornerShape(18.dp)
 
 @Composable
 fun FavoritesScreen(
@@ -60,7 +64,19 @@ fun FavoritesScreen(
     ) {
       if (state.favorites.isEmpty()) {
         item {
-          Text("暂无收藏", color = AppColors.TextMuted.copy(alpha = 0.6f), fontSize = 14.sp)
+          Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Outlined.FavoriteBorder,
+              contentDescription = null,
+              modifier = Modifier.size(48.dp),
+              tint = AppColors.TextMuted.copy(alpha = 0.5f)
+            )
+            Spacer(Modifier.height(8.dp))
+            Text("暂无收藏", color = AppColors.TextMuted.copy(alpha = 0.6f), fontSize = 14.sp)
+          }
         }
       } else {
         items(state.favorites) { item ->
@@ -69,6 +85,7 @@ fun FavoritesScreen(
               .fillMaxWidth()
               .clip(CardShape)
               .background(AppColors.CardSurface)
+              .border(1.dp, Color.White.copy(alpha = 0.06f), CardShape)
               .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
           ) {

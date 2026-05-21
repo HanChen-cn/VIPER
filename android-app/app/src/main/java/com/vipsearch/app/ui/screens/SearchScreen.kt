@@ -13,13 +13,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.SearchOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,18 +45,10 @@ import androidx.compose.ui.unit.sp
 import com.vipsearch.app.data.model.Episode
 import com.vipsearch.app.data.model.Show
 import com.vipsearch.app.ui.state.PlaybackSessionStore
+import com.vipsearch.app.ui.theme.AppColors
+import com.vipsearch.app.ui.theme.CardShape
+import com.vipsearch.app.ui.theme.PillShape
 import com.vipsearch.app.ui.viewmodel.SearchUiState
-
-private val BgCanvas = Color(0xFF1D1D1F)
-private val CardSurface = Color(0xFF272729)
-private val ActionBlue = Color(0xFF0066CC)
-private val TextPrimary = Color(0xFFFFFFFF)
-private val TextMuted = Color(0xFFCCCCCC)
-private val ErrorRed = Color(0xFFFF6B6B)
-private val NoticeBlue = Color(0xFF2997FF)
-
-private val PillShape = RoundedCornerShape(9999.dp)
-private val CardShape = RoundedCornerShape(18.dp)
 
 private const val EPISODE_COLUMNS = 2
 private const val MAX_EPISODE_ROWS = 4
@@ -70,13 +68,13 @@ fun SearchScreen(
   Column(
     modifier = Modifier
       .fillMaxSize()
-      .background(BgCanvas)
+      .background(AppColors.Canvas)
       .padding(horizontal = 16.dp, vertical = 12.dp),
     verticalArrangement = Arrangement.spacedBy(12.dp)
   ) {
     Text(
       text = "VIP 视频搜索",
-      color = TextPrimary,
+      color = AppColors.TextPrimary,
       fontSize = 28.sp,
       fontWeight = FontWeight.SemiBold,
       letterSpacing = (-0.28).sp
@@ -92,27 +90,52 @@ fun SearchScreen(
         onValueChange = onKeywordChange,
         singleLine = true,
         textStyle = TextStyle(
-          color = TextPrimary,
+          color = AppColors.TextPrimary,
           fontSize = 17.sp,
           fontWeight = FontWeight.Normal
         ),
-        cursorBrush = SolidColor(ActionBlue),
+        cursorBrush = SolidColor(AppColors.ActionBlue),
         modifier = Modifier
           .weight(1f)
           .clip(PillShape)
-          .background(CardSurface)
+          .background(AppColors.CardSurface)
           .border(1.dp, Color.White.copy(alpha = 0.08f), PillShape)
           .padding(horizontal = 20.dp, vertical = 12.dp),
-        decorationBox = { inner ->
-          Box {
-            if (state.keyword.isEmpty()) {
-              Text(
-                text = "输入剧名 / 动漫名",
-                color = TextMuted.copy(alpha = 0.7f),
-                fontSize = 17.sp
-              )
+        decorationBox = { innerTextField ->
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+          ) {
+            Icon(
+              imageVector = Icons.Default.Search,
+              contentDescription = null,
+              tint = AppColors.TextMuted,
+              modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Box(modifier = Modifier.weight(1f)) {
+              if (state.keyword.isEmpty()) {
+                Text(
+                  text = "输入剧名 / 动漫名",
+                  color = AppColors.TextMuted.copy(alpha = 0.7f),
+                  fontSize = 17.sp
+                )
+              }
+              innerTextField()
             }
-            inner()
+            if (state.keyword.isNotEmpty()) {
+              IconButton(
+                onClick = { onKeywordChange("") },
+                modifier = Modifier.size(24.dp)
+              ) {
+                Icon(
+                  imageVector = Icons.Default.Close,
+                  contentDescription = "清除",
+                  tint = AppColors.TextMuted,
+                  modifier = Modifier.size(18.dp)
+                )
+              }
+            }
           }
         }
       )
@@ -122,17 +145,17 @@ fun SearchScreen(
         enabled = state.keyword.isNotBlank() && !state.loading,
         shape = PillShape,
         colors = ButtonDefaults.buttonColors(
-          containerColor = ActionBlue,
-          contentColor = TextPrimary,
-          disabledContainerColor = ActionBlue.copy(alpha = 0.4f),
-          disabledContentColor = TextPrimary.copy(alpha = 0.6f)
+          containerColor = AppColors.ActionBlue,
+          contentColor = AppColors.TextPrimary,
+          disabledContainerColor = AppColors.ActionBlue.copy(alpha = 0.4f),
+          disabledContentColor = AppColors.TextPrimary.copy(alpha = 0.6f)
         ),
         modifier = Modifier.height(44.dp)
       ) {
         if (state.loading) {
           CircularProgressIndicator(
             modifier = Modifier.size(16.dp),
-            color = TextPrimary,
+            color = AppColors.TextPrimary,
             strokeWidth = 2.dp
           )
         } else {
@@ -146,16 +169,38 @@ fun SearchScreen(
     }
 
     if (state.error.isNotBlank()) {
-      Text(
-        text = state.error,
-        color = ErrorRed,
-        fontSize = 14.sp
-      )
+      if (state.results.isEmpty() && state.error == "未找到资源") {
+        Column(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          Icon(
+            imageVector = Icons.Outlined.SearchOff,
+            contentDescription = null,
+            tint = AppColors.TextMuted.copy(alpha = 0.5f),
+            modifier = Modifier.size(48.dp)
+          )
+          Text(
+            text = state.error,
+            color = AppColors.TextMuted.copy(alpha = 0.6f),
+            fontSize = 14.sp
+          )
+        }
+      } else {
+        Text(
+          text = state.error,
+          color = AppColors.ErrorRed,
+          fontSize = 14.sp
+        )
+      }
     }
     if (state.notice.isNotBlank()) {
       Text(
         text = state.notice,
-        color = NoticeBlue,
+        color = AppColors.SkyBlue,
         fontSize = 14.sp
       )
     }
@@ -196,7 +241,8 @@ private fun ShowResultCard(
     modifier = Modifier
       .fillMaxWidth()
       .clip(CardShape)
-      .background(CardSurface)
+      .background(AppColors.CardSurface)
+      .border(1.dp, Color.White.copy(alpha = 0.06f), CardShape)
       .padding(16.dp),
     verticalArrangement = Arrangement.spacedBy(10.dp)
   ) {
@@ -208,7 +254,7 @@ private fun ShowResultCard(
       Text(
         text = show.name,
         modifier = Modifier.weight(1f),
-        color = TextPrimary,
+        color = AppColors.TextPrimary,
         fontSize = 17.sp,
         fontWeight = FontWeight.SemiBold,
         maxLines = 2,
@@ -217,7 +263,7 @@ private fun ShowResultCard(
       TextButton(onClick = onAddFavorite) {
         Text(
           text = "收藏",
-          color = NoticeBlue,
+          color = AppColors.SkyBlue,
           fontSize = 14.sp
         )
       }
@@ -227,7 +273,7 @@ private fun ShowResultCard(
     if (meta.isNotBlank()) {
       Text(
         text = meta,
-        color = TextMuted,
+        color = AppColors.TextMuted,
         fontSize = 14.sp,
         lineHeight = 20.sp
       )
@@ -248,7 +294,7 @@ private fun ShowResultCard(
       ) {
         Text(
           text = if (expanded) "收起剧集" else "展开全部（${show.episodes.size} 集）",
-          color = NoticeBlue,
+          color = AppColors.SkyBlue,
           fontSize = 14.sp,
           modifier = Modifier.fillMaxWidth(),
           textAlign = TextAlign.Center
@@ -304,7 +350,7 @@ private fun EpisodePillButton(
       .height(36.dp)
       .clip(PillShape)
       .then(
-        if (isCurrent) Modifier.background(ActionBlue)
+        if (isCurrent) Modifier.background(AppColors.ActionBlue)
         else Modifier.border(1.dp, Color.White.copy(alpha = 0.35f), PillShape)
       )
       .clickable(onClick = onClick),
@@ -312,7 +358,7 @@ private fun EpisodePillButton(
   ) {
     Text(
       text = episode.name,
-      color = if (isCurrent) TextPrimary else TextMuted,
+      color = if (isCurrent) AppColors.TextPrimary else AppColors.TextMuted,
       fontSize = 13.sp,
       maxLines = 1,
       overflow = TextOverflow.Ellipsis,

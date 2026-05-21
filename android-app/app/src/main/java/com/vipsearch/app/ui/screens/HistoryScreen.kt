@@ -10,11 +10,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.PlayCircleOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,10 +32,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vipsearch.app.ui.theme.AppColors
+import com.vipsearch.app.ui.theme.CardShape
+import com.vipsearch.app.ui.theme.PillShape
 import com.vipsearch.app.ui.viewmodel.HistoryUiState
-
-private val PillShape = RoundedCornerShape(9999.dp)
-private val CardShape = RoundedCornerShape(18.dp)
 
 @Composable
 fun HistoryScreen(
@@ -83,7 +86,19 @@ fun HistoryScreen(
 
       if (state.searchHistory.isEmpty()) {
         item {
-          Text("暂无搜索历史", color = AppColors.TextMuted.copy(alpha = 0.6f), fontSize = 14.sp)
+          Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Outlined.History,
+              contentDescription = null,
+              modifier = Modifier.size(48.dp),
+              tint = AppColors.TextMuted.copy(alpha = 0.5f)
+            )
+            Spacer(Modifier.height(8.dp))
+            Text("暂无搜索历史", color = AppColors.TextMuted.copy(alpha = 0.6f), fontSize = 14.sp)
+          }
         }
       } else {
         items(state.searchHistory) { item ->
@@ -92,6 +107,7 @@ fun HistoryScreen(
               .fillMaxWidth()
               .clip(CardShape)
               .background(AppColors.CardSurface)
+              .border(1.dp, Color.White.copy(alpha = 0.06f), CardShape)
               .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -132,7 +148,19 @@ fun HistoryScreen(
 
       if (state.playHistory.isEmpty()) {
         item {
-          Text("暂无播放历史", color = AppColors.TextMuted.copy(alpha = 0.6f), fontSize = 14.sp)
+          Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp)
+          ) {
+            Icon(
+              imageVector = Icons.Outlined.PlayCircleOutline,
+              contentDescription = null,
+              modifier = Modifier.size(48.dp),
+              tint = AppColors.TextMuted.copy(alpha = 0.5f)
+            )
+            Spacer(Modifier.height(8.dp))
+            Text("暂无播放历史", color = AppColors.TextMuted.copy(alpha = 0.6f), fontSize = 14.sp)
+          }
         }
       } else {
         items(state.playHistory) { item ->
@@ -141,6 +169,7 @@ fun HistoryScreen(
               .fillMaxWidth()
               .clip(CardShape)
               .background(AppColors.CardSurface)
+              .border(1.dp, Color.White.copy(alpha = 0.06f), CardShape)
               .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
           ) {
