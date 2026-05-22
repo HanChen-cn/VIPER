@@ -38,6 +38,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -79,6 +80,11 @@ import androidx.media3.ui.PlayerView
 import com.vipsearch.app.player.PlayerCoordinator
 import com.vipsearch.app.player.PlaybackTarget
 import com.vipsearch.app.player.SourceSwitchController
+import com.vipsearch.app.dlna.CastState
+import com.vipsearch.app.dlna.DlnaDevice
+import com.vipsearch.app.dlna.PlaybackInfo
+import com.vipsearch.app.ui.components.CastDeviceDialog
+import com.vipsearch.app.ui.components.CastRemoteView
 import com.vipsearch.app.ui.viewmodel.PlayerUiState
 
 @Composable
@@ -87,7 +93,20 @@ fun PlayerScreen(
   onBack: () -> Unit,
   onSwitchEpisode: (Int) -> Unit,
   onNextEpisode: () -> Unit,
-  onRequestExtraSources: () -> Unit
+  onRequestExtraSources: () -> Unit,
+  castState: CastState = CastState.IDLE,
+  castDevices: List<DlnaDevice> = emptyList(),
+  connectedDevice: DlnaDevice? = null,
+  castPlaybackInfo: PlaybackInfo = PlaybackInfo(),
+  onCastButtonClick: () -> Unit = {},
+  onCastDeviceSelected: (DlnaDevice) -> Unit = {},
+  onCastDismiss: () -> Unit = {},
+  onCastPlay: () -> Unit = {},
+  onCastPause: () -> Unit = {},
+  onCastSeek: (Long) -> Unit = {},
+  onCastVolumeChange: (Int) -> Unit = {},
+  onCastDisconnect: () -> Unit = {},
+  onCastSwitchMedia: (String, String) -> Unit = { _, _ -> }
 ) {
   val session = uiState.session
   val coordinator = remember { PlayerCoordinator() }
@@ -100,6 +119,7 @@ fun PlayerScreen(
   val isVideoLoading = remember { mutableStateOf(true) }
   val isBuffering = remember { mutableStateOf(false) }
   val isVideoFullscreen = remember { mutableStateOf(false) }
+  val showCastDialog = remember { mutableStateOf(false) }
 
   val context = LocalContext.current
   val activity = context as? Activity
@@ -163,6 +183,12 @@ fun PlayerScreen(
       switchController.setSources(primary = session.primaryUrl, alternatives = combined)
       moveTo(switchController.current().orEmpty())
       statusHint.value = ""
+    }
+  }
+
+  LaunchedEffect(session.primaryUrl, session.episodeName, castState) {
+    if (castState == CastState.CASTING && session.primaryUrl.isNotBlank()) {
+      onCastSwitchMedia(session.primaryUrl, "${session.showName} · ${session.episodeName}")
     }
   }
 
@@ -276,53 +302,71 @@ fun PlayerScreen(
           .background(Color.Black)
       }
     ) {
-      when (val playbackTarget = target.value) {
-        is PlaybackTarget.Exo -> {
-          val player = exoPlayer.value
-          if (player != null) {
-            HoistedExoPlayerView(
-              exoPlayer = player,
-              onPlaybackReady = {
-                isVideoLoading.value = false
-                isBuffering.value = false
-              },
-              onBuffering = { isBuffering.value = true },
-              onPlaybackError = { errorMsg -> autoFallback(errorMsg) }
+      if (castState == CastState.CASTING && connectedDevice != null) {
+        CastRemoteView(
+          deviceName = connectedDevice.friendlyName,
+          showName = session.showName,
+          episodeName = session.episodeName,
+          playbackInfo = castPlaybackInfo,
+          hasNext = uiState.hasNextEpisode,
+          hasPrev = uiState.currentEpisodeIndex > 0,
+          onPlay = onCastPlay,
+          onPause = onCastPause,
+          onSeek = onCastSeek,
+          onVolumeChange = onCastVolumeChange,
+          onPrevEpisode = { if (uiState.currentEpisodeIndex > 0) onSwitchEpisode(uiState.currentEpisodeIndex - 1) },
+          onNextEpisode = onNextEpisode,
+          onDisconnect = onCastDisconnect
+        )
+      } else {
+        when (val playbackTarget = target.value) {
+          is PlaybackTarget.Exo -> {
+            val player = exoPlayer.value
+            if (player != null) {
+              HoistedExoPlayerView(
+                exoPlayer = player,
+                onPlaybackReady = {
+                  isVideoLoading.value = false
+                  isBuffering.value = false
+                },
+                onBuffering = { isBuffering.value = true },
+                onPlaybackError = { errorMsg -> autoFallback(errorMsg) }
+              )
+            }
+          }
+          is PlaybackTarget.Web -> {
+            HoistedWebView(
+              url = playbackTarget.pageUrl,
+              hoistedWebView = hoistedWebView,
+              hoistedWebViewUrl = hoistedWebViewUrl,
+              onWebError = { errorMsg -> autoFallback(errorMsg) },
+              onPageLoaded = { isVideoLoading.value = false }
             )
           }
-        }
-        is PlaybackTarget.Web -> {
-          HoistedWebView(
-            url = playbackTarget.pageUrl,
-            hoistedWebView = hoistedWebView,
-            hoistedWebViewUrl = hoistedWebViewUrl,
-            onWebError = { errorMsg -> autoFallback(errorMsg) },
-            onPageLoaded = { isVideoLoading.value = false }
-          )
-        }
-        null -> {
-          if (!isVideoFullscreen.value) {
-            Box(
-              modifier = Modifier.fillMaxSize(),
-              contentAlignment = Alignment.Center
-            ) {
-              isVideoLoading.value = false
-              Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                  Icons.Default.Fullscreen,
-                  contentDescription = null,
-                  tint = Color.White.copy(alpha = 0.4f),
-                  modifier = Modifier.size(48.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("请先从搜索页选择剧集", color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp)
+          null -> {
+            if (!isVideoFullscreen.value) {
+              Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+              ) {
+                isVideoLoading.value = false
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                  Icon(
+                    Icons.Default.Fullscreen,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.4f),
+                    modifier = Modifier.size(48.dp)
+                  )
+                  Spacer(modifier = Modifier.height(8.dp))
+                  Text("请先从搜索页选择剧集", color = Color.White.copy(alpha = 0.6f), fontSize = 14.sp)
+                }
               }
             }
           }
         }
       }
 
-      if ((isVideoLoading.value || isBuffering.value) && target.value != null) {
+      if (castState != CastState.CASTING && (isVideoLoading.value || isBuffering.value) && target.value != null) {
         Box(
           modifier = Modifier.fillMaxSize().zIndex(1f),
           contentAlignment = Alignment.Center
@@ -349,7 +393,7 @@ fun PlayerScreen(
       }
 
       // Compose fullscreen toggle button (bottom-right corner)
-      if (target.value != null) {
+      if (castState != CastState.CASTING && target.value != null) {
         IconButton(
           onClick = {
             if (isVideoFullscreen.value) exitFullscreen() else enterFullscreen()
@@ -432,6 +476,23 @@ fun PlayerScreen(
           Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp))
           Spacer(modifier = Modifier.width(4.dp))
           Text("复制", fontSize = 14.sp)
+        }
+
+        Button(
+          onClick = {
+            showCastDialog.value = true
+            onCastButtonClick()
+          },
+          shape = PillShape,
+          colors = ButtonDefaults.buttonColors(
+            containerColor = if (castState == CastState.CASTING) AppColors.ActionBlue else AppColors.CardSurface,
+            contentColor = if (castState == CastState.CASTING) Color.White else AppColors.TextMuted
+          ),
+          modifier = Modifier.height(40.dp)
+        ) {
+          Icon(Icons.Default.Cast, contentDescription = null, modifier = Modifier.size(14.dp))
+          Spacer(modifier = Modifier.width(4.dp))
+          Text(if (castState == CastState.CASTING) "投屏中" else "投屏", fontSize = 14.sp)
         }
       }
 
@@ -583,6 +644,21 @@ fun PlayerScreen(
           Text("暂无剧集信息", color = AppColors.TextMuted, fontSize = 13.sp)
         }
       }
+    }
+
+    if (showCastDialog.value) {
+      CastDeviceDialog(
+        devices = castDevices,
+        isSearching = castState == CastState.DISCOVERING,
+        onDeviceSelected = { device ->
+          showCastDialog.value = false
+          onCastDeviceSelected(device)
+        },
+        onDismiss = {
+          showCastDialog.value = false
+          onCastDismiss()
+        }
+      )
     }
   }
 }

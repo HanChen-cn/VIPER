@@ -22,6 +22,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,6 +55,9 @@ import com.vipsearch.app.ui.viewmodel.HistoryViewModel
 import com.vipsearch.app.ui.viewmodel.HistoryViewModelFactory
 import com.vipsearch.app.ui.viewmodel.FavoritesViewModel
 import com.vipsearch.app.ui.viewmodel.FavoritesViewModelFactory
+import com.vipsearch.app.dlna.CastState
+import com.vipsearch.app.ui.viewmodel.CastViewModel
+import com.vipsearch.app.ui.viewmodel.CastViewModelFactory
 import com.vipsearch.app.ui.viewmodel.SearchViewModel
 import com.vipsearch.app.ui.viewmodel.SearchViewModelFactory
 
@@ -239,6 +243,13 @@ fun AppNavGraph(appContainer: AppContainer, themeMode: MutableState<ThemeMode>) 
             historyRepository = appContainer.historyRepository
           )
         )
+        val castVm: CastViewModel = viewModel(
+          factory = CastViewModelFactory(appContainer.dlnaSessionManager)
+        )
+        val castState by castVm.castState.collectAsState()
+        val castDevices by castVm.devices.collectAsState()
+        val connectedDevice by castVm.connectedDevice.collectAsState()
+        val castPlaybackInfo by castVm.playbackInfo.collectAsState()
         LaunchedEffect(PlaybackSessionStore.session) {
           vm.bindSession(PlaybackSessionStore.session)
         }
@@ -247,7 +258,24 @@ fun AppNavGraph(appContainer: AppContainer, themeMode: MutableState<ThemeMode>) 
           onBack = { navController.popBackStack() },
           onSwitchEpisode = vm::switchEpisode,
           onNextEpisode = vm::nextEpisode,
-          onRequestExtraSources = vm::requestExtraSources
+          onRequestExtraSources = vm::requestExtraSources,
+          castState = castState,
+          castDevices = castDevices,
+          connectedDevice = connectedDevice,
+          castPlaybackInfo = castPlaybackInfo,
+          onCastButtonClick = { castVm.startDiscovery() },
+          onCastDeviceSelected = { device ->
+            val url = PlaybackSessionStore.session.primaryUrl
+            val title = "${PlaybackSessionStore.session.showName} · ${PlaybackSessionStore.session.episodeName}"
+            castVm.connectAndPlay(device, url, title)
+          },
+          onCastDismiss = { castVm.stopDiscovery() },
+          onCastPlay = { castVm.play() },
+          onCastPause = { castVm.pause() },
+          onCastSeek = { pos -> castVm.seek(pos) },
+          onCastVolumeChange = { vol -> castVm.setVolume(vol) },
+          onCastDisconnect = { castVm.disconnect() },
+          onCastSwitchMedia = { url, title -> castVm.switchMedia(url, title) }
         )
       }
     }
