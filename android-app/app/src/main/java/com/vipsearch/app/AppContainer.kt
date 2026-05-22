@@ -14,6 +14,10 @@ import com.vipsearch.app.data.repository.AltSourceRepository
 import com.vipsearch.app.data.repository.FavoritesRepository
 import com.vipsearch.app.data.repository.HistoryRepository
 import com.vipsearch.app.data.repository.SearchRepository
+import com.vipsearch.app.dlna.DlnaController
+import com.vipsearch.app.dlna.DlnaDeviceDiscovery
+import com.vipsearch.app.dlna.DlnaProxyServer
+import com.vipsearch.app.dlna.DlnaSessionManager
 import com.vipsearch.app.domain.usecase.GetAltSourcesUseCase
 import com.vipsearch.app.domain.usecase.SearchUseCase
 
@@ -42,6 +46,13 @@ class AppContainer(context: Context) {
 
   val searchUseCase by lazy { SearchUseCase(searchRepository) }
   val getAltSourcesUseCase by lazy { GetAltSourcesUseCase(altSourceRepository) }
+
+  val dlnaSessionManager by lazy {
+    val discovery = DlnaDeviceDiscovery(appContext, httpClient)
+    val controller = DlnaController(httpClient)
+    val proxyServer = DlnaProxyServer(httpClient)
+    DlnaSessionManager(discovery, controller, proxyServer)
+  }
 
   fun startWarmup(scope: CoroutineScope) {
     scope.launch(Dispatchers.IO) {
