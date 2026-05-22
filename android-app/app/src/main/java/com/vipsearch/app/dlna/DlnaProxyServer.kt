@@ -64,7 +64,7 @@ class DlnaProxyServer(
       val upstreamResponse = proxyClient.newCall(requestBuilder.build()).execute()
       val body = upstreamResponse.body
         ?: return newFixedLengthResponse(
-          Response.Status.BAD_GATEWAY,
+          Response.Status.INTERNAL_ERROR,
           MIME_PLAINTEXT,
           "Upstream returned empty body"
         )
