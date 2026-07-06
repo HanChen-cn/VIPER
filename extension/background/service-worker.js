@@ -54,6 +54,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     getPlayHistory().then(sendResponse);
     return true;
   }
+  if (message.type === 'updatePlayHistory') {
+    if (message.name && message.episode) {
+      addPlayHistory({ name: message.name, episode: message.episode, url: message.url });
+    }
+    sendResponse({ success: true });
+    return false;
+  }
   if (message.type === 'getFavorites') {
     getFavorites().then(sendResponse);
     return true;

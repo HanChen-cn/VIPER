@@ -97,6 +97,14 @@ function switchToEpisode(url, episodeName) {
 
   chrome.storage.session.set({ playerData: currentData });
 
+  // 更新播放历史
+  chrome.runtime.sendMessage({
+    type: 'updatePlayHistory',
+    name: currentData.name,
+    episode: episodeName,
+    url: url
+  });
+
   topTitle.textContent = `${currentData.name} - ${currentData.episode}`;
   showInfo.textContent = `${currentData.name} · ${currentData.episode}`;
   document.title = `${currentData.name} - ${currentData.episode}`;

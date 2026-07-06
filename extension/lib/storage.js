@@ -46,7 +46,7 @@ export async function getPlayHistory() {
 
 export async function addPlayHistory(item) {
   const history = await getPlayHistory();
-  const filtered = history.filter(h => !(h.name === item.name && h.episode === item.episode));
+  const filtered = history.filter(h => h.name !== item.name);
   filtered.unshift({
     name: item.name,
     episode: item.episode,
