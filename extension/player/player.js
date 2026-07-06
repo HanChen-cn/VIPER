@@ -15,6 +15,8 @@ const copyUrlBtn = document.getElementById('copyUrlBtn');
 let currentData = null;
 let nextEpisodeLoadHandler = null;
 let cachedEpisodes = null;
+let isLoadingEpisodes = false;
+let episodeLoadCompleted = false;
 
 chrome.storage.session.get('playerData', (result) => {
   if (!result.playerData) {
@@ -64,28 +66,44 @@ function loadAltSources() {
   });
 }
 
-function loadNextEpisode() {
+function loadNextEpisode(isUserTriggered = false) {
   if (!currentData || !currentData.name) return;
+  if (cachedEpisodes && cachedEpisodes.length > 0) return;
+  if (isLoadingEpisodes) return;
 
-  // 闲时请求：延迟 500ms，不阻塞播放
-  setTimeout(() => {
+  isLoadingEpisodes = true;
+  const MAX_RETRIES = isUserTriggered ? 0 : 3;
+  let retryCount = 0;
+
+  function fetchEpisodes() {
     chrome.runtime.sendMessage({
       type: 'getEpisodeList',
       showName: currentData.name
     }, (res) => {
-      if (!res || !res.success || !res.data || res.data.length === 0) return;
-
-      cachedEpisodes = res.data;
-      const currentIndex = cachedEpisodes.findIndex(ep => ep.name === currentData.episode);
-      if (currentIndex < 0 || currentIndex >= cachedEpisodes.length - 1) return;
-
-      const nextEp = cachedEpisodes[currentIndex + 1];
-      currentData.nextPlayUrl = nextEp.playUrl;
-      currentData.nextEpisode = nextEp.name;
-
-      nextEpisodeBtn.classList.remove('hidden');
+      if (res && res.success && res.data && res.data.length > 0) {
+        cachedEpisodes = res.data;
+        const currentIndex = cachedEpisodes.findIndex(ep => ep.name === currentData.episode);
+        if (currentIndex >= 0 && currentIndex < cachedEpisodes.length - 1) {
+          const nextEp = cachedEpisodes[currentIndex + 1];
+          currentData.nextPlayUrl = nextEp.playUrl;
+          currentData.nextEpisode = nextEp.name;
+          nextEpisodeBtn.classList.remove('hidden');
+        }
+        // 更新剧集列表 UI
+        if (!episodeDropdown.classList.contains('hidden')) {
+          renderEpisodeList();
+        }
+      } else if (retryCount < MAX_RETRIES) {
+        retryCount++;
+        setTimeout(fetchEpisodes, 1000);
+      }
+      isLoadingEpisodes = false;
+      episodeLoadCompleted = true;
     });
-  }, 500);
+  }
+
+  // 初始加载延迟 500ms，用户手动加载立即执行
+  setTimeout(fetchEpisodes, isUserTriggered ? 0 : 500);
 }
 
 function switchToEpisode(url, episodeName) {
@@ -93,7 +111,6 @@ function switchToEpisode(url, episodeName) {
   currentData.episode = episodeName;
   delete currentData.nextPlayUrl;
   delete currentData.nextEpisode;
-  cachedEpisodes = null;
 
   chrome.storage.session.set({ playerData: currentData });
 
@@ -124,8 +141,16 @@ function switchToEpisode(url, episodeName) {
 
 function renderEpisodeList() {
   episodeList.innerHTML = '';
+
   if (!cachedEpisodes || cachedEpisodes.length === 0) {
-    episodeList.innerHTML = '<div class="source-empty">暂无剧集信息</div>';
+    if (isLoadingEpisodes) {
+      episodeList.innerHTML = '<div class="source-loading"><span class="loading-spinner"></span> 加载中...</div>';
+    } else if (episodeLoadCompleted) {
+      episodeList.innerHTML = '<div class="source-loading"><span class="loading-spinner"></span> 加载中...</div>';
+      loadNextEpisode(true);
+    } else {
+      episodeList.innerHTML = '<div class="source-loading"><span class="loading-spinner"></span> 加载中...</div>';
+    }
     return;
   }
 
